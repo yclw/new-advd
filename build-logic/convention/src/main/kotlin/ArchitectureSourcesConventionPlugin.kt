@@ -18,7 +18,7 @@ abstract class VerifyArchitectureSourcesTask : DefaultTask() {
     fun verify() {
         if (violations.get().isNotEmpty()) {
             throw GradleException(
-                "Architecture source violations:\n${violations.get().joinToString("\n")}" 
+                "Architecture source violations:\n${violations.get().joinToString("\n")}"
             )
         }
     }
@@ -27,23 +27,23 @@ abstract class VerifyArchitectureSourcesTask : DefaultTask() {
 class ArchitectureSourcesConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
-        check(path == ":") { "avd.architecture-sources must be applied to the root project." }
+            check(path == ":") { "avd.architecture-sources must be applied to the root project." }
 
-        val verifyArchitectureSources =
-            tasks.register<VerifyArchitectureSourcesTask>("verifyArchitectureSources") {
-                group = "verification"
-                description = "Verifies domain and ViewModel source boundaries."
+            val verifyArchitectureSources =
+                tasks.register<VerifyArchitectureSourcesTask>("verifyArchitectureSources") {
+                    group = "verification"
+                    description = "Verifies domain and ViewModel source boundaries."
+                }
+
+            gradle.projectsEvaluated {
+                verifyArchitectureSources.configure {
+                    violations.set(allprojects.flatMap(::findViolations))
+                }
             }
 
-        gradle.projectsEvaluated {
-            verifyArchitectureSources.configure {
-                violations.set(allprojects.flatMap(::findViolations))
+            tasks.named("check") {
+                dependsOn(verifyArchitectureSources)
             }
-        }
-
-        tasks.named("check") {
-            dependsOn(verifyArchitectureSources)
-        }
         }
     }
 
@@ -56,12 +56,20 @@ class ArchitectureSourcesConventionPlugin : Plugin<Project> {
             buildList {
                 if (project.path.startsWith(":domain:") || project.path.startsWith(":contract:")) {
                     imports.filter(::isForbiddenInPureKotlinModule).forEach { imported ->
-                        add("${project.path}: ${file.relativeTo(project.projectDir).path} must not import $imported")
+                        add(
+                            "${project.path}: ${file.relativeTo(
+                                project.projectDir
+                            ).path} must not import $imported"
+                        )
                     }
                 }
                 if (isViewModel(file)) {
                     imports.filter(::isForbiddenInViewModel).forEach { imported ->
-                        add("${project.path}: ${file.relativeTo(project.projectDir).path} ViewModel must not import $imported")
+                        add(
+                            "${project.path}: ${file.relativeTo(
+                                project.projectDir
+                            ).path} ViewModel must not import $imported"
+                        )
                     }
                 }
             }
@@ -86,7 +94,7 @@ class ArchitectureSourcesConventionPlugin : Plugin<Project> {
             "import androidx.room.",
             "import androidx.work.",
             "import androidx.webkit.",
-            "import dagger.hilt.android.",
+            "import dagger.hilt.android."
         )
         val viewModelForbiddenPrefixes = listOf(
             "import android.content.Context",
@@ -94,7 +102,7 @@ class ArchitectureSourcesConventionPlugin : Plugin<Project> {
             "import androidx.room.",
             "import java.io.File",
             "import com.aeibi.avd.data.",
-            "import ai.koog.",
+            "import ai.koog."
         )
     }
 }

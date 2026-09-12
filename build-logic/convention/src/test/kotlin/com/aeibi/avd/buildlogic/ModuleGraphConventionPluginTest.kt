@@ -46,7 +46,10 @@ class ModuleGraphConventionPluginTest {
             .withPluginClasspath(listOf(pluginJar()))
             .buildAndFail()
 
-        assertTrue(result.output, result.output.contains(":feature:projects must not depend on :data:project"))
+        assertTrue(
+            result.output,
+            result.output.contains(":feature:projects must not depend on :data:project")
+        )
     }
 
     @Test
@@ -134,7 +137,11 @@ class ModuleGraphConventionPluginTest {
 
     private fun pluginJar(): File {
         val testClasses =
-            File(ModuleGraphConventionPluginTest::class.java.protectionDomain.codeSource.location.toURI())
+            File(
+                ModuleGraphConventionPluginTest::class.java.protectionDomain.codeSource
+                    .location
+                    .toURI()
+            )
         return File(testClasses.parentFile.parentFile.parentFile, "libs/convention.jar").also {
             check(it.isFile) { "Plugin jar is missing: $it" }
         }

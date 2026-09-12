@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aeibi.avd.core.common.ProjectId
@@ -18,7 +19,8 @@ fun ProjectsRoute(
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
     val context = LocalContext.current
-    LaunchedEffect(viewModel, context) {
+    val resources = LocalResources.current
+    LaunchedEffect(viewModel, context, resources) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
                 is ProjectsEffect.NavigateToProject -> onProjectSelected(effect.projectId)
@@ -30,7 +32,7 @@ fun ProjectsRoute(
                     onInitializationProgressRequested(effect.projectId)
                 is ProjectsEffect.ShowMessage -> Toast.makeText(
                     context,
-                    context.getString(projectsErrorResource(effect.message.error)),
+                    resources.getString(projectsErrorResource(effect.message.error)),
                     Toast.LENGTH_SHORT
                 ).show()
             }
