@@ -1,0 +1,35 @@
+<resources>
+    <string name="projects_title">项目</string>
+    <string name="projects_create">创建</string>
+    <string name="projects_create_title">创建项目</string>
+    <string name="projects_rename">重命名</string>
+    <string name="projects_rename_title">重命名项目</string>
+    <string name="projects_edit">编辑</string>
+    <string name="projects_edit_title">编辑项目</string>
+    <string name="projects_save">保存</string>
+    <string name="projects_delete">删除</string>
+    <string name="projects_delete_title">删除项目？</string>
+    <string name="projects_delete_message">停止 %1$s 并删除其所有文件？</string>
+    <string name="projects_cancel">取消</string>
+    <string name="projects_retry">重试</string>
+    <string name="projects_empty">创建一个项目以开始使用。</string>
+    <string name="projects_name_label">项目名称</string>
+    <string name="projects_description_label">描述</string>
+    <string name="projects_pick_icon">选择图标</string>
+    <string name="projects_selected_icon">项目图标</string>
+    <string name="projects_remove_icon">移除图标</string>
+    <string name="projects_icon_error">无法处理图标，请选择另一张图片。</string>
+    <string name="projects_error_title">无法完成操作</string>
+    <string name="projects_error_invalid_name">请输入不超过 60 个字符的项目名称。</string>
+    <string name="projects_error_invalid_description">请输入不超过 280 个字符的描述。</string>
+    <string name="projects_error_name_exists">已存在同名项目。</string>
+    <string name="projects_error_not_found">该项目已不存在。</string>
+    <string name="projects_error_invalid_state">该项目状态无效。</string>
+    <string name="projects_error_runtime_close">无法停止正在运行的项目，请重试。</string>
+    <string name="projects_error_storage">项目存储不可用，请重试。</string>
+    <string name="projects_setup">选择项目初始化方式。</string>
+    <string name="projects_retry_initialization">初始化未完成，请再次选择空白项目。</string>
+    <string name="projects_initialize_blank">空白项目</string>
+    <string name="projects_initializing">项目正在初始化。</string>
+    <string name="projects_back">返回</string>
+</resources>

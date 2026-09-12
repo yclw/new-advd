@@ -1,0 +1,35 @@
+<resources>
+    <string name="projects_title">Projects</string>
+    <string name="projects_create">Create</string>
+    <string name="projects_create_title">Create project</string>
+    <string name="projects_rename">Rename</string>
+    <string name="projects_rename_title">Rename project</string>
+    <string name="projects_edit">Edit</string>
+    <string name="projects_edit_title">Edit project</string>
+    <string name="projects_save">Save</string>
+    <string name="projects_delete">Delete</string>
+    <string name="projects_delete_title">Delete project?</string>
+    <string name="projects_delete_message">Stop %1$s and delete all of its files?</string>
+    <string name="projects_cancel">Cancel</string>
+    <string name="projects_retry">Retry</string>
+    <string name="projects_empty">Create a project to get started.</string>
+    <string name="projects_name_label">Project name</string>
+    <string name="projects_description_label">Description</string>
+    <string name="projects_pick_icon">Choose icon</string>
+    <string name="projects_selected_icon">Project icon</string>
+    <string name="projects_remove_icon">Remove icon</string>
+    <string name="projects_icon_error">Could not prepare the icon. Choose another image.</string>
+    <string name="projects_error_title">Unable to complete operation</string>
+    <string name="projects_error_invalid_name">Enter a project name up to 60 characters.</string>
+    <string name="projects_error_invalid_description">Enter a description up to 280 characters.</string>
+    <string name="projects_error_name_exists">A project with this name already exists.</string>
+    <string name="projects_error_not_found">This project no longer exists.</string>
+    <string name="projects_error_invalid_state">This project is in an invalid state.</string>
+    <string name="projects_error_runtime_close">The running project could not be stopped. Try again.</string>
+    <string name="projects_error_storage">Project storage is unavailable. Try again.</string>
+    <string name="projects_setup">Choose how to initialize this project.</string>
+    <string name="projects_retry_initialization">Initialization did not finish. Try Blank again.</string>
+    <string name="projects_initialize_blank">Blank project</string>
+    <string name="projects_initializing">Project initialization is in progress.</string>
+    <string name="projects_back">Back</string>
+</resources>

@@ -1,0 +1,13 @@
+.gradle/
+.kotlin/
+.idea/
+**/build/
+**/.cxx/
+**/bin/
+!feature/build/
+feature/build/build/
+.DS_Store
+*.hprof
+local.properties
+*.iml
+.vscode/
