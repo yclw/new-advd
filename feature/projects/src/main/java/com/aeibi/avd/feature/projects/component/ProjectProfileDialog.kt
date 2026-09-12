@@ -22,6 +22,7 @@ import com.aeibi.avd.domain.project.ProjectIconChange
 import com.aeibi.avd.domain.project.ProjectIconUpload
 import com.aeibi.avd.feature.projects.ProjectIconPreview
 import com.aeibi.avd.feature.projects.R
+import com.aeibi.avd.feature.projects.bridge.IconPreparationResult
 import com.aeibi.avd.feature.projects.bridge.ProjectIconPickerBridge
 
 @Composable
@@ -34,7 +35,7 @@ internal fun ProjectProfileDialog(
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String, String, ProjectIconChange) -> Unit,
-    onIconPreparationResult: (com.aeibi.avd.feature.projects.bridge.IconPreparationResult) -> Unit
+    onIconPreparationResult: (IconPreparationResult) -> Unit
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
     var description by rememberSaveable { mutableStateOf(initialDescription) }
@@ -56,7 +57,7 @@ internal fun ProjectProfileDialog(
                     existingIcon = if (removeIcon) null else existingIcon,
                     selectedIcon = selectedIcon,
                     onResult = { result ->
-                        if (result is com.aeibi.avd.feature.projects.bridge.IconPreparationResult.Ready) {
+                        if (result is IconPreparationResult.Ready) {
                             selectedIcon = result.icon
                             removeIcon = false
                         }
