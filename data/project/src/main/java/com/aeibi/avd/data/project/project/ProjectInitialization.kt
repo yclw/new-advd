@@ -3,9 +3,9 @@ package com.aeibi.avd.data.project.project
 import com.aeibi.avd.core.common.AppError
 import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.core.common.SnapshotId
-import com.aeibi.avd.core.filesystem.RelativePath
 import com.aeibi.avd.core.filesystem.ControlledFileSystem
 import com.aeibi.avd.core.filesystem.FileSystemResult
+import com.aeibi.avd.core.filesystem.RelativePath
 import com.aeibi.avd.data.project.ProjectStorageLayout
 import java.util.UUID
 import javax.inject.Inject
@@ -95,18 +95,22 @@ internal class InitializationJournalStore @Inject constructor(
             initializationJournalJson.encodeToString(InitializationJournal.serializer(), journal)
         ) is FileSystemResult.Success
 
-    suspend fun delete(projectId: ProjectId): Boolean =
-        fileSystem.deleteFile(ProjectStorageLayout.initializationJournalPath(projectId)) is FileSystemResult.Success
+    suspend fun delete(projectId: ProjectId): Boolean = fileSystem.deleteFile(
+        ProjectStorageLayout.initializationJournalPath(projectId)
+    ) is FileSystemResult.Success
 }
 
 private const val MAX_FILE_COUNT = 1_000
 private const val MAX_FILE_BYTES = 1 * 1024 * 1024
 private const val MAX_TOTAL_BYTES = 10 * 1024 * 1024
 
-private val initializationJournalJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = false }
-
-private fun kotlinx.serialization.json.Json.fromJson(value: String): InitializationJournal? = runCatching {
-    decodeFromString(InitializationJournal.serializer(), value)
-}.getOrNull()?.takeIf {
-    it.source == "BLANK" && it.operationUuid() != null && it.durablePhase() != null
+private val initializationJournalJson = kotlinx.serialization.json.Json {
+    ignoreUnknownKeys = false
 }
+
+private fun kotlinx.serialization.json.Json.fromJson(value: String): InitializationJournal? =
+    runCatching {
+        decodeFromString(InitializationJournal.serializer(), value)
+    }.getOrNull()?.takeIf {
+        it.source == "BLANK" && it.operationUuid() != null && it.durablePhase() != null
+    }

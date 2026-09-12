@@ -3,10 +3,10 @@ package com.aeibi.avd.domain.project
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.core.model.Project
+import com.aeibi.avd.data.project.project.InitialWorkspaceContent
 import com.aeibi.avd.data.project.project.ProjectDataError
 import com.aeibi.avd.data.project.project.ProjectIconData
 import com.aeibi.avd.data.project.project.ProjectIconDataChange
-import com.aeibi.avd.data.project.project.InitialWorkspaceContent
 import com.aeibi.avd.data.project.project.ProjectRepository
 import com.aeibi.avd.data.project.version.VersionRepository
 import java.text.Normalizer
@@ -46,19 +46,33 @@ class InitializeBlankProjectUseCase @Inject constructor(
     private val versionRepository: VersionRepository
 ) {
     suspend operator fun invoke(projectId: ProjectId): OperationResult<Project> {
-        when (val prepared = projectRepository.prepareInitialization(projectId, BlankWorkspaceDefinition.content)) {
+        when (
+            val prepared = projectRepository.prepareInitialization(
+                projectId,
+                BlankWorkspaceDefinition.content
+            )
+        ) {
             is OperationResult.Failure -> return prepared.mapProjectError()
             is OperationResult.Success -> Unit
         }
         try {
-            val initialRevision = when (val created = versionRepository.createInitialRevision(projectId)) {
+            val initialRevision = when (
+                val created = versionRepository.createInitialRevision(
+                    projectId
+                )
+            ) {
                 is OperationResult.Failure -> {
                     projectRepository.resolveInitializationFailure(projectId, created.error)
                     return OperationResult.Failure(ProjectDomainError.InitializationFailed)
                 }
                 is OperationResult.Success -> created.value
             }
-            return when (val published = projectRepository.publishInitialization(projectId, initialRevision.id)) {
+            return when (
+                val published = projectRepository.publishInitialization(
+                    projectId,
+                    initialRevision.id
+                )
+            ) {
                 is OperationResult.Success -> published.mapProjectError()
                 is OperationResult.Failure -> {
                     projectRepository.resolveInitializationFailure(projectId, published.error)
@@ -182,7 +196,8 @@ private fun <T> OperationResult<T>.mapProjectError(): OperationResult<T> = when 
             ProjectDataError.InvalidIcon -> ProjectDomainError.InvalidIcon
             ProjectDataError.IconTooLarge -> ProjectDomainError.IconTooLarge
             ProjectDataError.InitializationInvalid,
-            ProjectDataError.InitializationRecoveryRequired -> ProjectDomainError.InitializationFailed
+            ProjectDataError.InitializationRecoveryRequired ->
+                ProjectDomainError.InitializationFailed
             else -> ProjectDomainError.StorageUnavailable
         }
     )

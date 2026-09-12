@@ -30,10 +30,8 @@ internal object ProjectStorageLayout {
     fun stagingPayloadDirectory(projectId: ProjectId, operationId: String): RelativePath =
         path("projects/.staging/${projectId.value}/$operationId")
 
-    fun stagingPayloadWorkspaceDirectory(
-        projectId: ProjectId,
-        operationId: String
-    ): RelativePath = path("projects/.staging/${projectId.value}/$operationId/workspace")
+    fun stagingPayloadWorkspaceDirectory(projectId: ProjectId, operationId: String): RelativePath =
+        path("projects/.staging/${projectId.value}/$operationId/workspace")
 
     fun stagingPayloadGitDirectory(projectId: ProjectId, operationId: String): RelativePath =
         path("projects/.staging/${projectId.value}/$operationId/git")

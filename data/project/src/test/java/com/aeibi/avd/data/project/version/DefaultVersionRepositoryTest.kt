@@ -2,6 +2,9 @@ package com.aeibi.avd.data.project.version
 
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
+import com.aeibi.avd.core.filesystem.ControlledFileSystem
+import com.aeibi.avd.core.filesystem.FileSystemResult
+import com.aeibi.avd.core.filesystem.RelativePath
 import com.aeibi.avd.core.git.ControlledGit
 import com.aeibi.avd.core.git.GitCommit
 import com.aeibi.avd.core.git.GitCommitRequest
@@ -10,9 +13,6 @@ import com.aeibi.avd.core.git.GitRepositoryLocation
 import com.aeibi.avd.core.git.GitResult
 import com.aeibi.avd.core.git.GitRevision
 import com.aeibi.avd.core.git.GitStatus
-import com.aeibi.avd.core.filesystem.ControlledFileSystem
-import com.aeibi.avd.core.filesystem.FileSystemResult
-import com.aeibi.avd.core.filesystem.RelativePath
 import com.aeibi.avd.core.model.VersionCreator
 import com.aeibi.avd.core.model.VersionSnapshotType
 import com.aeibi.avd.data.project.ProjectMutationLease
@@ -160,12 +160,20 @@ class DefaultVersionRepositoryTest {
 }
 
 private object NoOpFileSystem : ControlledFileSystem {
-    override suspend fun createDirectories(path: RelativePath): FileSystemResult<Unit> = success(Unit)
-    override suspend fun listDirectories(path: RelativePath): FileSystemResult<List<String>> = success(emptyList())
+    override suspend fun createDirectories(path: RelativePath): FileSystemResult<Unit> =
+        success(Unit)
+    override suspend fun listDirectories(path: RelativePath): FileSystemResult<List<String>> =
+        success(emptyList())
     override suspend fun readText(path: RelativePath): FileSystemResult<String?> = success(null)
-    override suspend fun writeTextAtomically(path: RelativePath, content: String): FileSystemResult<Unit> = success(Unit)
+    override suspend fun writeTextAtomically(
+        path: RelativePath,
+        content: String
+    ): FileSystemResult<Unit> = success(Unit)
     override suspend fun readBytes(path: RelativePath): FileSystemResult<ByteArray?> = success(null)
-    override suspend fun writeBytesAtomically(path: RelativePath, bytes: ByteArray): FileSystemResult<Unit> = success(Unit)
+    override suspend fun writeBytesAtomically(
+        path: RelativePath,
+        bytes: ByteArray
+    ): FileSystemResult<Unit> = success(Unit)
     override suspend fun moveDirectoryAtomically(
         source: RelativePath,
         destination: RelativePath

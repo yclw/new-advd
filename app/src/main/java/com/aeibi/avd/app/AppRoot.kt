@@ -6,9 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.aeibi.avd.core.common.ProjectId
-import com.aeibi.avd.feature.projects.ProjectsRoute
 import com.aeibi.avd.feature.projects.ProjectInitializationRoute
 import com.aeibi.avd.feature.projects.ProjectSetupRoute
+import com.aeibi.avd.feature.projects.ProjectsRoute
 import com.aeibi.avd.feature.workbench.WorkbenchRoute
 
 @Composable

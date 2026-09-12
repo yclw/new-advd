@@ -2,8 +2,8 @@ package com.aeibi.avd.domain.project
 
 import com.aeibi.avd.contract.projectruntime.AgentProjectRuntimeControl
 import com.aeibi.avd.contract.projectruntime.PreviewProjectRuntimeControl
-import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.AppError
+import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.core.common.SnapshotId
 import com.aeibi.avd.core.model.Project
@@ -11,9 +11,9 @@ import com.aeibi.avd.core.model.ProjectStatus
 import com.aeibi.avd.core.model.VersionCreator
 import com.aeibi.avd.core.model.VersionSnapshot
 import com.aeibi.avd.core.model.VersionSnapshotType
+import com.aeibi.avd.data.project.project.InitialWorkspaceContent
 import com.aeibi.avd.data.project.project.ProjectIconData
 import com.aeibi.avd.data.project.project.ProjectIconDataChange
-import com.aeibi.avd.data.project.project.InitialWorkspaceContent
 import com.aeibi.avd.data.project.project.ProjectRepository
 import com.aeibi.avd.data.project.version.VersionRepository
 import kotlin.time.Duration
@@ -159,15 +159,20 @@ class ProjectUseCasesTest {
             error: AppError
         ): OperationResult<Unit> = OperationResult.Success(Unit)
 
-        override suspend fun recoverInitialization(projectId: ProjectId): OperationResult<Project?> =
-            OperationResult.Success(null)
+        override suspend fun recoverInitialization(
+            projectId: ProjectId
+        ): OperationResult<Project?> = OperationResult.Success(null)
     }
 
-    private class FakeVersionRepository(private val events: MutableList<String>) : VersionRepository {
-        override fun observeSnapshots(projectId: ProjectId): Flow<OperationResult<List<VersionSnapshot>>> =
-            emptyFlow()
+    private class FakeVersionRepository(private val events: MutableList<String>) :
+        VersionRepository {
+        override fun observeSnapshots(
+            projectId: ProjectId
+        ): Flow<OperationResult<List<VersionSnapshot>>> = emptyFlow()
 
-        override suspend fun createInitialRevision(projectId: ProjectId): OperationResult<VersionSnapshot> {
+        override suspend fun createInitialRevision(
+            projectId: ProjectId
+        ): OperationResult<VersionSnapshot> {
             events += "initial"
             return OperationResult.Success(
                 VersionSnapshot(

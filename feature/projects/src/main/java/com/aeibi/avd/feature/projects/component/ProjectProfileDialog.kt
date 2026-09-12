@@ -33,13 +33,13 @@ internal fun ProjectProfileDialog(
     existingIcon: ProjectIconPreview?,
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, ProjectIconChange) -> Unit
+    onConfirm: (String, String, ProjectIconChange) -> Unit,
+    onIconPreparationResult: (com.aeibi.avd.feature.projects.bridge.IconPreparationResult) -> Unit
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
     var description by rememberSaveable { mutableStateOf(initialDescription) }
     var selectedIcon by remember { mutableStateOf<ProjectIconUpload?>(null) }
     var removeIcon by rememberSaveable { mutableStateOf(false) }
-    var iconError by rememberSaveable { mutableStateOf(false) }
     val isNameValid = name.trim().isNotEmpty() && name.codePointCount(0, name.length) <= 60
     val iconChange = when {
         selectedIcon != null -> ProjectIconChange.Replace(selectedIcon!!)
@@ -55,12 +55,13 @@ internal fun ProjectProfileDialog(
                 ProjectIconPickerBridge(
                     existingIcon = if (removeIcon) null else existingIcon,
                     selectedIcon = selectedIcon,
-                    onIconPrepared = {
-                        selectedIcon = it
-                        removeIcon = false
-                        iconError = false
-                    },
-                    onError = { iconError = true }
+                    onResult = { result ->
+                        if (result is com.aeibi.avd.feature.projects.bridge.IconPreparationResult.Ready) {
+                            selectedIcon = result.icon
+                            removeIcon = false
+                        }
+                        onIconPreparationResult(result)
+                    }
                 )
                 if (existingIcon != null || selectedIcon != null) {
                     TextButton(enabled = !isSubmitting, onClick = {
@@ -89,7 +90,6 @@ internal fun ProjectProfileDialog(
                         .fillMaxWidth()
                         .semantics { testTag = "project_profile_description" }
                 )
-                if (iconError) Text(stringResource(R.string.projects_icon_error))
             }
         },
         confirmButton = {

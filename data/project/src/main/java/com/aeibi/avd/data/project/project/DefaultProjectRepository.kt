@@ -215,15 +215,23 @@ internal class DefaultProjectRepository @Inject constructor(
             }
             val iconRevision = readMetadata(projectId)?.iconRevision
             val journal = newInitializationJournal()
-            val payload = ProjectStorageLayout.stagingPayloadDirectory(projectId, journal.operationId)
+            val payload = ProjectStorageLayout.stagingPayloadDirectory(
+                projectId,
+                journal.operationId
+            )
             if (!initializationJournals.write(projectId, journal) ||
                 !writeProject(current.copy(status = ProjectStatus.INITIALIZING), iconRevision)
             ) {
                 return@withLock storageFailure()
             }
-            if (fileSystem.deleteDirectory(ProjectStorageLayout.stagingProjectDirectory(projectId)).isFailure() ||
+            if (fileSystem.deleteDirectory(
+                    ProjectStorageLayout.stagingProjectDirectory(projectId)
+                ).isFailure() ||
                 fileSystem.createDirectories(
-                    ProjectStorageLayout.stagingPayloadWorkspaceDirectory(projectId, journal.operationId)
+                    ProjectStorageLayout.stagingPayloadWorkspaceDirectory(
+                        projectId,
+                        journal.operationId
+                    )
                 ).isFailure()
             ) {
                 return@withLock failPreparation(projectId, current, iconRevision, payload)
@@ -236,16 +244,25 @@ internal class DefaultProjectRepository @Inject constructor(
                 val path = checkNotNull(RelativePath.of("${workspace.value}/${file.relativePath}"))
                 fileSystem.writeTextAtomically(path, file.content).isFailure()
             }
-            if (writeFailed || !initializationJournals.write(
+            if (writeFailed ||
+                !initializationJournals.write(
                     projectId,
                     journal.withPhase(InitializationPhase.STAGED)
                 )
             ) {
                 return@withLock failPreparation(projectId, current, iconRevision, payload)
             }
-            publish(currentProjects().map { project ->
-                if (project.id == projectId) project.copy(status = ProjectStatus.INITIALIZING) else project
-            })
+            publish(
+                currentProjects().map { project ->
+                    if (project.id ==
+                        projectId
+                    ) {
+                        project.copy(status = ProjectStatus.INITIALIZING)
+                    } else {
+                        project
+                    }
+                }
+            )
             OperationResult.Success(Unit)
         }
     }
@@ -278,19 +295,30 @@ internal class DefaultProjectRepository @Inject constructor(
                     ProjectDataError.InitializationRecoveryRequired
                 )
                 is GitResult.Success -> if (
-                    status.value.headRevision?.value != initialRevisionId.value || status.value.hasChanges
+                    status.value.headRevision?.value != initialRevisionId.value ||
+                    status.value.hasChanges
                 ) {
                     return@withLock failure(ProjectDataError.InitializationInvalid)
                 }
             }
-            val payload = ProjectStorageLayout.stagingPayloadDirectory(projectId, journal.operationId)
+            val payload = ProjectStorageLayout.stagingPayloadDirectory(
+                projectId,
+                journal.operationId
+            )
             if (journal.durablePhase() == InitializationPhase.INITIAL_REVISION_CREATED) {
                 if (fileSystem.moveDirectoryAtomically(
-                        ProjectStorageLayout.stagingPayloadWorkspaceDirectory(projectId, journal.operationId),
+                        ProjectStorageLayout.stagingPayloadWorkspaceDirectory(
+                            projectId,
+                            journal.operationId
+                        ),
                         ProjectStorageLayout.workspaceDirectory(projectId)
-                    ).isFailure() || !initializationJournals.write(
+                    ).isFailure() ||
+                    !initializationJournals.write(
                         projectId,
-                        journal.withPhase(InitializationPhase.WORKSPACE_PUBLISHED, initialRevisionId)
+                        journal.withPhase(
+                            InitializationPhase.WORKSPACE_PUBLISHED,
+                            initialRevisionId
+                        )
                     )
                 ) {
                     return@withLock failure(ProjectDataError.InitializationRecoveryRequired)
@@ -300,11 +328,18 @@ internal class DefaultProjectRepository @Inject constructor(
                 ?: return@withLock failure(ProjectDataError.InitializationRecoveryRequired)
             if (afterWorkspace.durablePhase() == InitializationPhase.WORKSPACE_PUBLISHED) {
                 if (fileSystem.moveDirectoryAtomically(
-                        ProjectStorageLayout.stagingPayloadGitDirectory(projectId, journal.operationId),
+                        ProjectStorageLayout.stagingPayloadGitDirectory(
+                            projectId,
+                            journal.operationId
+                        ),
                         ProjectStorageLayout.gitDirectory(projectId)
-                    ).isFailure() || !initializationJournals.write(
+                    ).isFailure() ||
+                    !initializationJournals.write(
                         projectId,
-                        afterWorkspace.withPhase(InitializationPhase.PAYLOAD_PUBLISHED, initialRevisionId)
+                        afterWorkspace.withPhase(
+                            InitializationPhase.PAYLOAD_PUBLISHED,
+                            initialRevisionId
+                        )
                     )
                 ) {
                     return@withLock failure(ProjectDataError.InitializationRecoveryRequired)
@@ -315,10 +350,12 @@ internal class DefaultProjectRepository @Inject constructor(
                 status = ProjectStatus.READY,
                 updatedAtEpochMillis = System.currentTimeMillis()
             )
-            if (!writeProject(ready, iconRevision) || !initializationJournals.write(
+            if (!writeProject(ready, iconRevision) ||
+                !initializationJournals.write(
                     projectId,
                     afterWorkspace.withPhase(InitializationPhase.READY_PUBLISHED, initialRevisionId)
-                ) || !initializationJournals.delete(projectId)
+                ) ||
+                !initializationJournals.delete(projectId)
             ) {
                 return@withLock failure(ProjectDataError.InitializationRecoveryRequired)
             }
@@ -339,7 +376,8 @@ internal class DefaultProjectRepository @Inject constructor(
             val journal = initializationJournals.read(projectId)
                 ?: return@withLock failure(ProjectDataError.InitializationRecoveryRequired)
             if (journal.revisionId() != null ||
-                journal.durablePhase() !in setOf(InitializationPhase.PREPARING, InitializationPhase.STAGED)
+                journal.durablePhase() !in
+                setOf(InitializationPhase.PREPARING, InitializationPhase.STAGED)
             ) {
                 initializationJournals.write(projectId, journal.withFailure(error))
                 return@withLock failure(ProjectDataError.InitializationRecoveryRequired)
@@ -351,7 +389,8 @@ internal class DefaultProjectRepository @Inject constructor(
             val iconRevision = readMetadata(projectId)?.iconRevision
             if (fileSystem.deleteDirectory(
                     ProjectStorageLayout.stagingProjectDirectory(projectId)
-                ).isFailure() || !writeProject(failed, iconRevision) ||
+                ).isFailure() ||
+                !writeProject(failed, iconRevision) ||
                 !initializationJournals.delete(projectId)
             ) {
                 return@withLock storageFailure()
@@ -361,9 +400,7 @@ internal class DefaultProjectRepository @Inject constructor(
         }
     }
 
-    override suspend fun recoverInitialization(
-        projectId: ProjectId
-    ): OperationResult<Project?> {
+    override suspend fun recoverInitialization(projectId: ProjectId): OperationResult<Project?> {
         val journal = initializationJournals.read(projectId) ?: return OperationResult.Success(
             getProject(projectId)
         )
@@ -380,7 +417,9 @@ internal class DefaultProjectRepository @Inject constructor(
                 mutex.withLock {
                     val current = currentProjects().firstOrNull { it.id == projectId }
                         ?: return@withLock failure(ProjectDataError.ProjectNotFound)
-                    if (current.status != ProjectStatus.READY || !initializationJournals.delete(projectId)) {
+                    if (current.status != ProjectStatus.READY ||
+                        !initializationJournals.delete(projectId)
+                    ) {
                         return@withLock failure(ProjectDataError.InitializationRecoveryRequired)
                     }
                     OperationResult.Success(current)
@@ -451,7 +490,10 @@ internal class DefaultProjectRepository @Inject constructor(
     ): OperationResult.Failure {
         fileSystem.deleteDirectory(payload)
         initializationJournals.delete(projectId)
-        val failed = current.copy(status = ProjectStatus.FAILED, updatedAtEpochMillis = System.currentTimeMillis())
+        val failed = current.copy(
+            status = ProjectStatus.FAILED,
+            updatedAtEpochMillis = System.currentTimeMillis()
+        )
         writeProject(failed, iconRevision)
         publish(currentProjects().map { if (it.id == projectId) failed else it })
         return storageFailure()

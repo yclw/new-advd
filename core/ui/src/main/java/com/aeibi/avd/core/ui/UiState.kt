@@ -2,6 +2,8 @@ package com.aeibi.avd.core.ui
 
 data class UiError(val messageKey: String, val retryable: Boolean, val operationId: String? = null)
 
+data class UiMessage(val error: UiError)
+
 sealed interface ContentState<out T> {
     data object Loading : ContentState<Nothing>
     data class Content<T>(val value: T) : ContentState<T>

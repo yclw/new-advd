@@ -229,8 +229,11 @@ private object NoOpGit : ControlledGit {
         repository: GitRepositoryLocation,
         request: GitCommitRequest
     ): GitResult<GitRevision> = error("Not used")
-    override suspend fun status(repository: GitRepositoryLocation): GitResult<GitStatus> = error("Not used")
-    override suspend fun readHistory(repository: GitRepositoryLocation): GitResult<List<GitCommit>> = error("Not used")
+    override suspend fun status(repository: GitRepositoryLocation): GitResult<GitStatus> =
+        error("Not used")
+    override suspend fun readHistory(
+        repository: GitRepositoryLocation
+    ): GitResult<List<GitCommit>> = error("Not used")
     override suspend fun restoreWorkTree(
         repository: GitRepositoryLocation,
         revision: GitRevision

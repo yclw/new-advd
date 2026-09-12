@@ -7,6 +7,7 @@ import com.aeibi.avd.core.model.Project
 import com.aeibi.avd.core.model.ProjectStatus
 import com.aeibi.avd.core.ui.ContentState
 import com.aeibi.avd.core.ui.OperationState
+import com.aeibi.avd.core.ui.UiMessage
 import com.aeibi.avd.domain.project.CreateDraftProjectUseCase
 import com.aeibi.avd.domain.project.CreateProjectRequest
 import com.aeibi.avd.domain.project.DeleteProjectUseCase
@@ -84,6 +85,21 @@ class ProjectsViewModel @Inject constructor(
             is ProjectsAction.DeleteConfirmed -> perform { deleteProject(action.projectId) }
             ProjectsAction.RetryListLoad -> viewModelScope.launch { refreshProjects() }
             is ProjectsAction.SelectProject -> navigateToReadyProject(action.projectId)
+            is ProjectsAction.IconPreparationCompleted -> when (action.result) {
+                is com.aeibi.avd.feature.projects.bridge.IconPreparationResult.Ready -> Unit
+                com.aeibi.avd.feature.projects.bridge.IconPreparationResult.Failed -> {
+                    effectsChannel.trySend(
+                        ProjectsEffect.ShowMessage(
+                            UiMessage(
+                                com.aeibi.avd.core.ui.UiError(
+                                    messageKey = "project_icon_preparation_failed",
+                                    retryable = true
+                                )
+                            )
+                        )
+                    )
+                }
+            }
             ProjectsAction.AcknowledgeOperation -> operation.value = OperationState.Idle
         }
     }
@@ -101,7 +117,9 @@ class ProjectsViewModel @Inject constructor(
             ProjectStatus.INITIALIZING -> effectsChannel.trySend(
                 ProjectsEffect.NavigateToInitializationProgress(projectId)
             )
-            ProjectStatus.READY -> effectsChannel.trySend(ProjectsEffect.NavigateToProject(projectId))
+            ProjectStatus.READY -> effectsChannel.trySend(
+                ProjectsEffect.NavigateToProject(projectId)
+            )
             ProjectStatus.DELETING, null -> Unit
         }
     }

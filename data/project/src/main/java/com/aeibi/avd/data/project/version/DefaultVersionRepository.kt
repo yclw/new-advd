@@ -137,13 +137,15 @@ internal class DefaultVersionRepository @Inject constructor(
     private suspend fun createInitialCommit(
         projectId: ProjectId,
         repository: GitRepositoryLocation
-    ): OperationResult<VersionSnapshot> = when (val created = createCommit(
-        projectId = projectId,
-        repository = repository,
-        creator = VersionCreator.SYSTEM,
-        type = VersionSnapshotType.INITIALIZATION,
-        restoredFromSnapshotId = null
-    )) {
+    ): OperationResult<VersionSnapshot> = when (
+        val created = createCommit(
+            projectId = projectId,
+            repository = repository,
+            creator = VersionCreator.SYSTEM,
+            type = VersionSnapshotType.INITIALIZATION,
+            restoredFromSnapshotId = null
+        )
+    ) {
         is OperationResult.Failure -> created
         is OperationResult.Success -> recordInitialRevision(projectId, created.value)
     }

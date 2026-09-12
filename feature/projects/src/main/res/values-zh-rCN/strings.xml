@@ -27,6 +27,7 @@
     <string name="projects_error_invalid_state">该项目状态无效。</string>
     <string name="projects_error_runtime_close">无法停止正在运行的项目，请重试。</string>
     <string name="projects_error_storage">项目存储不可用，请重试。</string>
+    <string name="projects_error_initialization">项目初始化未能完成，请重试。</string>
     <string name="projects_setup">选择项目初始化方式。</string>
     <string name="projects_retry_initialization">初始化未完成，请再次选择空白项目。</string>
     <string name="projects_initialize_blank">空白项目</string>

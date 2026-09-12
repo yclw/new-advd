@@ -34,12 +34,16 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
 
+sealed interface IconPreparationResult {
+    data class Ready(val icon: ProjectIconUpload) : IconPreparationResult
+    data object Failed : IconPreparationResult
+}
+
 @Composable
 internal fun ProjectIconPickerBridge(
     existingIcon: ProjectIconPreview?,
     selectedIcon: ProjectIconUpload?,
-    onIconPrepared: (ProjectIconUpload) -> Unit,
-    onError: () -> Unit,
+    onResult: (IconPreparationResult) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -49,10 +53,10 @@ internal fun ProjectIconPickerBridge(
         if (result.resultCode == Activity.RESULT_OK) {
             UCrop.getOutput(result.data ?: return@rememberLauncherForActivityResult)
                 ?.let(context::prepareIcon)
-                ?.let(onIconPrepared)
-                ?: onError()
+                ?.let { icon -> onResult(IconPreparationResult.Ready(icon)) }
+                ?: onResult(IconPreparationResult.Failed)
         } else if (result.resultCode == UCrop.RESULT_ERROR) {
-            onError()
+            onResult(IconPreparationResult.Failed)
         }
     }
     val photoPicker =

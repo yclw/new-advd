@@ -89,7 +89,8 @@ fun ProjectsScreen(uiState: ProjectsUiState, onAction: (ProjectsAction) -> Unit)
                         (iconChange as? ProjectIconChange.Replace)?.icon
                     )
                 )
-            }
+            },
+            onIconPreparationResult = { onAction(ProjectsAction.IconPreparationCompleted(it)) }
         )
     }
     editProject?.let { project ->
@@ -103,7 +104,8 @@ fun ProjectsScreen(uiState: ProjectsUiState, onAction: (ProjectsAction) -> Unit)
             onDismiss = { editProject = null },
             onConfirm = { name, description, iconChange ->
                 onAction(ProjectsAction.UpdateConfirmed(project.id, name, description, iconChange))
-            }
+            },
+            onIconPreparationResult = { onAction(ProjectsAction.IconPreparationCompleted(it)) }
         )
     }
     deleteProject?.let { project ->
@@ -163,14 +165,5 @@ private fun ErrorDialog(error: UiError, onDismiss: () -> Unit) {
 
 @Composable
 private fun projectsErrorText(error: UiError): String = stringResource(
-    when (error.messageKey) {
-        "project_invalid_name" -> R.string.projects_error_invalid_name
-        "project_invalid_description" -> R.string.projects_error_invalid_description
-        "project_name_exists" -> R.string.projects_error_name_exists
-        "project_not_found" -> R.string.projects_error_not_found
-        "project_invalid_state" -> R.string.projects_error_invalid_state
-        "project_icon_invalid", "project_icon_too_large" -> R.string.projects_icon_error
-        "project_runtime_close_failed" -> R.string.projects_error_runtime_close
-        else -> R.string.projects_error_storage
-    }
+    projectsErrorResource(error)
 )
