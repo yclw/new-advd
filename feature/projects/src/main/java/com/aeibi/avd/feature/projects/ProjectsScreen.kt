@@ -32,7 +32,11 @@ import com.aeibi.avd.feature.projects.component.ProjectProfileDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectsScreen(uiState: ProjectsUiState, onAction: (ProjectsAction) -> Unit) {
+fun ProjectsScreen(
+    uiState: ProjectsUiState,
+    onAction: (ProjectsAction) -> Unit,
+    onSettingsRequested: () -> Unit = {}
+) {
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var editProject by remember { mutableStateOf<ProjectItem?>(null) }
     var deleteProject by remember { mutableStateOf<ProjectItem?>(null) }
@@ -48,7 +52,16 @@ fun ProjectsScreen(uiState: ProjectsUiState, onAction: (ProjectsAction) -> Unit)
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.projects_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.projects_title)) },
+                actions = {
+                    TextButton(onClick = onSettingsRequested) {
+                        Text(stringResource(R.string.projects_settings))
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = { if (!submitting) showCreateDialog = true }) {
                 Text(stringResource(R.string.projects_create))

@@ -15,6 +15,7 @@ fun ProjectsRoute(
     onProjectSelected: (ProjectId) -> Unit,
     onProjectSetupRequested: (ProjectId, Boolean) -> Unit,
     onInitializationProgressRequested: (ProjectId) -> Unit,
+    onSettingsRequested: () -> Unit,
     viewModel: ProjectsViewModel = viewModel()
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
@@ -38,5 +39,9 @@ fun ProjectsRoute(
             }
         }
     }
-    ProjectsScreen(uiState = uiState, onAction = viewModel::onAction)
+    ProjectsScreen(
+        uiState = uiState,
+        onAction = viewModel::onAction,
+        onSettingsRequested = onSettingsRequested
+    )
 }

@@ -41,4 +41,5 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.core)
+    implementation("androidx.compose.runtime:runtime-saveable")
 }

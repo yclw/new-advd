@@ -4,16 +4,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.feature.projects.ProjectInitializationRoute
 import com.aeibi.avd.feature.projects.ProjectSetupRoute
 import com.aeibi.avd.feature.projects.ProjectsRoute
+import com.aeibi.avd.feature.settings.SettingsRoute
 import com.aeibi.avd.feature.workbench.WorkbenchRoute
 
 @Composable
 fun AppRoot() {
     var destination by remember { mutableStateOf<AppDestination>(AppDestination.List) }
+    var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+
+    if (isSettingsOpen) {
+        SettingsRoute(onNavigateBack = { isSettingsOpen = false })
+        return
+    }
+
     when (val current = destination) {
         AppDestination.List -> ProjectsRoute(
             onProjectSelected = { destination = AppDestination.Workbench(it.value) },
@@ -22,7 +31,8 @@ fun AppRoot() {
             },
             onInitializationProgressRequested = {
                 destination = AppDestination.Initializing(it.value)
-            }
+            },
+            onSettingsRequested = { isSettingsOpen = true }
         )
         is AppDestination.Setup -> ProjectSetupRoute(
             projectId = ProjectId(current.projectId),

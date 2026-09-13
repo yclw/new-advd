@@ -1,5 +1,6 @@
 <resources>
     <string name="projects_title">Projects</string>
+    <string name="projects_settings">Settings</string>
     <string name="projects_create">Create</string>
     <string name="projects_create_title">Create project</string>
     <string name="projects_rename">Rename</string>

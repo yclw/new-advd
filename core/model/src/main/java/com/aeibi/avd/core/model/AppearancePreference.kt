@@ -22,11 +22,14 @@ data class ThemePreference(
 /** The supported per-app language choices. SYSTEM delegates to the device locale. */
 enum class AppLanguage(val languageTag: String?) {
     SYSTEM(languageTag = null),
-    ENGLISH(languageTag = "en-US"),
-    SIMPLIFIED_CHINESE(languageTag = "zh-CN");
+    ENGLISH(languageTag = "en"),
+    SIMPLIFIED_CHINESE(languageTag = "zh-Hans");
 
     companion object {
-        fun fromLanguageTag(languageTag: String?): AppLanguage =
-            entries.firstOrNull { it.languageTag == languageTag } ?: SYSTEM
+        fun fromLanguageTag(languageTag: String?): AppLanguage = when (languageTag) {
+            ENGLISH.languageTag -> ENGLISH
+            SIMPLIFIED_CHINESE.languageTag -> SIMPLIFIED_CHINESE
+            else -> SYSTEM
+        }
     }
 }

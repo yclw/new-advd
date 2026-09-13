@@ -1,5 +1,6 @@
 <resources>
     <string name="projects_title">项目</string>
+    <string name="projects_settings">设置</string>
     <string name="projects_create">创建</string>
     <string name="projects_create_title">创建项目</string>
     <string name="projects_rename">重命名</string>

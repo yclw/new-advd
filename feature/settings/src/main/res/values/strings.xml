@@ -1,0 +1,21 @@
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_appearance_title">Appearance</string>
+    <string name="settings_appearance_summary">%1$s · %2$s</string>
+    <string name="settings_theme_mode_title">Theme mode</string>
+    <string name="settings_theme_mode_system">Follow system</string>
+    <string name="settings_theme_mode_light">Light</string>
+    <string name="settings_theme_mode_dark">Dark</string>
+    <string name="settings_theme_palette_title">Color palette</string>
+    <string name="settings_theme_palette_terracotta">Terracotta</string>
+    <string name="settings_theme_palette_sage">Sage</string>
+    <string name="settings_theme_palette_gold">Gold</string>
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_system">Follow system</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_simplified_chinese">Simplified Chinese</string>
+    <string name="settings_error_title">Unable to update settings</string>
+    <string name="settings_error_update">Your change could not be saved. Try again.</string>
+    <string name="settings_ok">OK</string>
+</resources>
