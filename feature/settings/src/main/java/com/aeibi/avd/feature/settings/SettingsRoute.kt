@@ -2,50 +2,47 @@ package com.aeibi.avd.feature.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun SettingsRoute(onNavigateBack: () -> Unit) {
+fun SettingsRoute(
+    onNavigateBack: () -> Unit,
+    onAppearanceSelected: () -> Unit,
+    onLanguageSelected: () -> Unit
+) {
     val viewModel: SettingsViewModel = viewModel()
-    SettingsRouteContent(onNavigateBack, viewModel)
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    SettingsHomeScreen(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onAppearanceSelected = onAppearanceSelected,
+        onLanguageSelected = onLanguageSelected,
+        onDismissError = viewModel::dismissError
+    )
 }
 
 @Composable
-private fun SettingsRouteContent(onNavigateBack: () -> Unit, viewModel: SettingsViewModel) {
-    var destinationName by rememberSaveable { mutableStateOf(SettingsDestination.HOME.name) }
-    val destination = SettingsDestination.valueOf(destinationName)
+fun AppearanceSettingsRoute(onNavigateBack: () -> Unit) {
+    val viewModel: SettingsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    when (destination) {
-        SettingsDestination.HOME -> SettingsHomeScreen(
-            uiState = uiState,
-            onNavigateBack = onNavigateBack,
-            onAppearanceSelected = { destinationName = SettingsDestination.APPEARANCE.name },
-            onLanguageSelected = { destinationName = SettingsDestination.LANGUAGE.name },
-            onDismissError = viewModel::dismissError
-        )
-        SettingsDestination.APPEARANCE -> AppearanceSettingsScreen(
-            uiState = uiState,
-            onNavigateBack = { destinationName = SettingsDestination.HOME.name },
-            onThemeModeSelected = viewModel::selectThemeMode,
-            onThemePaletteSelected = viewModel::selectThemePalette,
-            onDismissError = viewModel::dismissError
-        )
-        SettingsDestination.LANGUAGE -> LanguageSettingsScreen(
-            uiState = uiState,
-            onNavigateBack = { destinationName = SettingsDestination.HOME.name },
-            onLanguageSelected = viewModel::selectLanguage,
-            onDismissError = viewModel::dismissError
-        )
-    }
+    AppearanceSettingsScreen(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onThemeModeSelected = viewModel::selectThemeMode,
+        onThemePaletteSelected = viewModel::selectThemePalette,
+        onDismissError = viewModel::dismissError
+    )
 }
 
-private enum class SettingsDestination {
-    HOME,
-    APPEARANCE,
-    LANGUAGE
+@Composable
+fun LanguageSettingsRoute(onNavigateBack: () -> Unit) {
+    val viewModel: SettingsViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    LanguageSettingsScreen(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onLanguageSelected = viewModel::selectLanguage,
+        onDismissError = viewModel::dismissError
+    )
 }

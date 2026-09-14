@@ -2,6 +2,7 @@ plugins {
     id("avd.android.compose.application")
     id("avd.hilt")
     id("avd.testing")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -40,6 +41,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     implementation(libs.kotlinx.coroutines.core)
     implementation("androidx.compose.runtime:runtime-saveable")
 }
