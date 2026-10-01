@@ -12,5 +12,4 @@ sealed class ProjectDataError(override val code: ErrorCode, override val retryab
         true
     )
     data object InvalidIcon : ProjectDataError(ErrorCode("project_icon_invalid"), false)
-    data object IconTooLarge : ProjectDataError(ErrorCode("project_icon_too_large"), false)
 }

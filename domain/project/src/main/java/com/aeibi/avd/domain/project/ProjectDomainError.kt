@@ -17,7 +17,6 @@ sealed class ProjectDomainError(override val code: ErrorCode, override val retry
         false
     )
     data object InvalidIcon : ProjectDomainError(ErrorCode("project_icon_invalid"), false)
-    data object IconTooLarge : ProjectDomainError(ErrorCode("project_icon_too_large"), false)
     data object RuntimeCloseFailed : ProjectDomainError(
         ErrorCode("project_runtime_close_failed"),
         true

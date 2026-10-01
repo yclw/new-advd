@@ -47,10 +47,15 @@ fun WorkbenchRoute(
             Text(stringResource(R.string.workbench_project, projectId.value))
             when {
                 state.loading || state.working -> CircularProgressIndicator()
-                state.recorded -> Text(stringResource(
-                    if (state.hasUnrecordedChanges) R.string.workbench_unrecorded_changes
-                    else R.string.workbench_version_recorded
-                ))
+                state.recorded -> Text(
+                    stringResource(
+                        if (state.hasUnrecordedChanges) {
+                            R.string.workbench_unrecorded_changes
+                        } else {
+                            R.string.workbench_version_recorded
+                        }
+                    )
+                )
                 else -> {
                     Text(stringResource(R.string.workbench_version_off))
                     TextButton(onClick = { viewModel.record(projectId) }) {
@@ -68,10 +73,15 @@ fun WorkbenchRoute(
             onDismissRequest = viewModel::postpone,
             title = { Text(stringResource(R.string.workbench_version_prompt_title)) },
             text = {
-                Text(stringResource(
-                    if (state.error) R.string.workbench_version_error
-                    else R.string.workbench_version_prompt_message
-                ))
+                Text(
+                    stringResource(
+                        if (state.error) {
+                            R.string.workbench_version_error
+                        } else {
+                            R.string.workbench_version_prompt_message
+                        }
+                    )
+                )
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.record(projectId) }) {

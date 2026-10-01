@@ -34,7 +34,7 @@
 ```text
 :data:project ───┬─> :core:filesystem
                  ├─> :core:git
-                 └─> :core:database                 （按需接入）
+                 └─> :core:database                 （项目 metadata 与 icon）
 
 :data:session ─────> :core:database                 （按需接入）
 :data:template ────> :core:filesystem / :core:network（按需接入）
@@ -45,12 +45,12 @@
 :feature:* ───────> :domain:* / UI 相关 :core:*
 ```
 
-“按需接入”很重要：`:core:filesystem` 和 `:core:git` 已为项目初始化提供受控实现；
-其他技术模块仍可能只有边界或基础实现。只有真实 vertical slice 需要某项能力时，
-才在相应 core 模块实现并让 data 模块依赖它，不预建 Room schema 或网络 client。
+“按需接入”很重要：`:core:database` 已为项目 metadata 和 icon 提供 Room 表与 DAO；
+`:core:filesystem` 和 `:core:git` 为项目工作区与版本提供受控实现。其他技术模块仍可能
+只有边界或基础实现。只有真实 vertical slice 需要某项能力时才增加对应实现。
 
 上图中未标“按需接入”的箭头表示已声明的模块依赖，不保证对应资源能力已经实现。
-当前 `:data:project` 有项目元数据和初始版本实现，但 `WorkspaceRepository` 仍只有契约；
+当前 `:data:project` 有 Room 项目元数据、图标和初始版本实现，但 `WorkspaceRepository` 仍只有契约；
 `:data:session` 只有 `SessionRepository` 契约，消息与 turn journal 尚无实现；
 Preview 日志只有仓库接口。工作区 Chat／Preview 接入前，应先补齐所需实现与测试，
 不能把下面的资源所有权表误读为完成清单。

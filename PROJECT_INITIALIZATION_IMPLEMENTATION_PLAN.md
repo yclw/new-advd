@@ -6,6 +6,8 @@
 
 > 本文记录 `:feature:projects`、`:domain:project`、`:data:project` 与
 > `:domain:version` 的阶段性实现契约。
+> 当前项目 metadata 与图标已改由 Room 保存；下文的 `project.json` 是旧设计记录，
+> 后续初始化实现应更新 Room 中的项目状态，并继续处理数据库与文件/Git 之间的恢复。
 > 本期只实现**空白项目（Blank）初始化**；模板和导入不实现，但边界必须允许它们复用相同的发布、
 > Git 首版本和恢复流程。
 

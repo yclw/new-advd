@@ -8,6 +8,7 @@ androidxCore = "1.18.0"
 annotationExperimental = "1.6.0"
 appcompat = "1.8.0"
 datastore = "1.2.1"
+room = "3.0.3"
 exifinterface = "1.4.1"
 lifecycle = "2.11.0"
 navigation3 = "1.0.1"
@@ -38,6 +39,8 @@ androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecy
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 javax-inject = { module = "javax.inject:javax.inject", version = "1" }

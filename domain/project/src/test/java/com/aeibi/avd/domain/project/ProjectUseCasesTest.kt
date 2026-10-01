@@ -5,7 +5,7 @@ import com.aeibi.avd.contract.projectruntime.PreviewProjectRuntimeControl
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.core.model.Project
-import com.aeibi.avd.data.project.project.ProjectIconData
+import com.aeibi.avd.core.model.ProjectIcon
 import com.aeibi.avd.data.project.project.ProjectIconDataChange
 import com.aeibi.avd.data.project.project.ProjectRepository
 import kotlin.time.Duration
@@ -92,7 +92,7 @@ class ProjectUseCasesTest {
         override suspend fun createProject(
             name: String,
             description: String,
-            icon: ProjectIconData?
+            icon: ProjectIcon?
         ): OperationResult<Project> {
             createdName = name
             createdDescription = description
@@ -106,16 +106,11 @@ class ProjectUseCasesTest {
             iconChange: ProjectIconDataChange
         ): OperationResult<Project> = OperationResult.Success(project(projectId, name, description))
 
-        override suspend fun loadIcon(projectId: ProjectId): OperationResult<ProjectIconData?> =
-            OperationResult.Success(null)
-
         override suspend fun delete(projectId: ProjectId): OperationResult<Unit> {
             deleted = true
             return deleteResult
         }
-
     }
-
 }
 
 private object NoOpAgentRuntime : AgentProjectRuntimeControl {
@@ -151,7 +146,7 @@ private fun project(id: ProjectId, name: String, description: String) = Project(
     id = id,
     name = name,
     description = description,
-    hasCustomIcon = false,
+    icon = null,
     createdAtEpochMillis = 0,
     updatedAtEpochMillis = 0
 )

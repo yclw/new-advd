@@ -1,6 +1,6 @@
 # :data:project
 
-Owner: Android Vibe Design maintainers. Owns the project aggregate: project metadata,
+Owner: Android Vibe Design maintainers. Owns the project aggregate: Room-backed project metadata and icons,
 workspace files, import/export, version snapshots, and Preview logs. Public contracts are grouped by
 resource under `project`, `workspace`, `version`, and `preview.log`; physical directory layout stays
 an `internal` type at the aggregate root. Filesystem, Git, journals, Hilt bindings, and tool implementations

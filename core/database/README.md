@@ -1,7 +1,7 @@
 # :core:database
 
-Owner: Android Vibe Design maintainers. Owns Room database setup, entities, DAOs, and
-migrations when persistent relational storage is introduced. It does not define
+Owner: Android Vibe Design maintainers. Owns the Room database, project tables and DAO,
+schema history, and future database migrations. It does not define
 Repository contracts or business operations; data modules map its storage models to
 their public resource models.
 

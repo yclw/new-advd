@@ -222,7 +222,9 @@ class DefaultVersionRepositoryTest {
         val paths = mutableSetOf<String>()
 
         override suspend fun exists(path: RelativePath): FileSystemResult<Boolean> =
-            FileSystemResult.Success(path.value == "projects/project/workspace" || path.value in paths)
+            FileSystemResult.Success(
+                path.value == "projects/project/workspace" || path.value in paths
+            )
 
         override suspend fun writeTextAtomically(
             path: RelativePath,

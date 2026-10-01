@@ -26,8 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import com.aeibi.avd.domain.project.ProjectIconUpload
-import com.aeibi.avd.feature.projects.ProjectIconPreview
+import com.aeibi.avd.core.model.ProjectIcon
 import com.aeibi.avd.feature.projects.R
 import com.yalantis.ucrop.UCrop
 import java.io.ByteArrayOutputStream
@@ -35,14 +34,14 @@ import java.io.File
 import java.util.UUID
 
 sealed interface IconPreparationResult {
-    data class Ready(val icon: ProjectIconUpload) : IconPreparationResult
+    data class Ready(val icon: ProjectIcon) : IconPreparationResult
     data object Failed : IconPreparationResult
 }
 
 @Composable
 internal fun ProjectIconPickerBridge(
-    existingIcon: ProjectIconPreview?,
-    selectedIcon: ProjectIconUpload?,
+    existingIcon: ProjectIcon?,
+    selectedIcon: ProjectIcon?,
     onResult: (IconPreparationResult) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -82,9 +81,11 @@ internal fun ProjectIconPickerBridge(
                 )
                 .start(context, cropLauncher)
         }
-    val bytes = selectedIcon?.copyPngBytes() ?: existingIcon?.copyPngBytes()
-    val image = remember(bytes?.contentHashCode()) {
-        bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+    val icon = selectedIcon ?: existingIcon
+    val image = remember(icon) {
+        icon?.copyPngBytes()?.let { bytes ->
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+        }
     }
 
     Box(
@@ -111,7 +112,7 @@ internal fun ProjectIconPickerBridge(
     }
 }
 
-private fun Context.prepareIcon(uri: Uri): ProjectIconUpload? {
+private fun Context.prepareIcon(uri: Uri): ProjectIcon? {
     val original =
         contentResolver.openInputStream(uri)?.use(BitmapFactory::decodeStream) ?: return null
     val scaled = if (original.width == ICON_SIZE && original.height == ICON_SIZE) {
@@ -124,7 +125,7 @@ private fun Context.prepareIcon(uri: Uri): ProjectIconUpload? {
             if (!scaled.compress(Bitmap.CompressFormat.PNG, 100, output)) return null
             output.toByteArray()
         }
-        ProjectIconUpload.fromPng(bytes)
+        ProjectIcon.fromPng(bytes)
     } finally {
         scaled.recycle()
     }

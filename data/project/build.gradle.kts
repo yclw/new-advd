@@ -10,6 +10,7 @@ android { namespace = "com.aeibi.avd.data.project" }
 dependencies {
     implementation(libs.androidx.annotation.experimental)
     implementation(project(":core:common"))
+    implementation(project(":core:database"))
     implementation(project(":core:filesystem"))
     implementation(project(":core:git"))
     implementation(project(":core:model"))

@@ -1,16 +1,13 @@
 package com.aeibi.avd.feature.projects
 
 import com.aeibi.avd.core.common.ProjectId
+import com.aeibi.avd.core.model.ProjectIcon
 import com.aeibi.avd.domain.project.ProjectIconChange
-import com.aeibi.avd.domain.project.ProjectIconUpload
 import com.aeibi.avd.feature.projects.bridge.IconPreparationResult
 
 sealed interface ProjectsAction {
-    data class CreateConfirmed(
-        val name: String,
-        val description: String,
-        val icon: ProjectIconUpload?
-    ) : ProjectsAction
+    data class CreateConfirmed(val name: String, val description: String, val icon: ProjectIcon?) :
+        ProjectsAction
     data class UpdateConfirmed(
         val projectId: ProjectId,
         val name: String,

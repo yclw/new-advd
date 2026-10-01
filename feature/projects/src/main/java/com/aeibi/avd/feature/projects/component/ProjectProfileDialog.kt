@@ -18,9 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
+import com.aeibi.avd.core.model.ProjectIcon
 import com.aeibi.avd.domain.project.ProjectIconChange
-import com.aeibi.avd.domain.project.ProjectIconUpload
-import com.aeibi.avd.feature.projects.ProjectIconPreview
 import com.aeibi.avd.feature.projects.R
 import com.aeibi.avd.feature.projects.bridge.IconPreparationResult
 import com.aeibi.avd.feature.projects.bridge.ProjectIconPickerBridge
@@ -31,7 +30,7 @@ internal fun ProjectProfileDialog(
     confirmLabel: String,
     initialName: String,
     initialDescription: String,
-    existingIcon: ProjectIconPreview?,
+    existingIcon: ProjectIcon?,
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String, String, ProjectIconChange) -> Unit,
@@ -39,7 +38,7 @@ internal fun ProjectProfileDialog(
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
     var description by rememberSaveable { mutableStateOf(initialDescription) }
-    var selectedIcon by remember { mutableStateOf<ProjectIconUpload?>(null) }
+    var selectedIcon by remember { mutableStateOf<ProjectIcon?>(null) }
     var removeIcon by rememberSaveable { mutableStateOf(false) }
     val isNameValid = name.trim().isNotEmpty() && name.codePointCount(0, name.length) <= 60
     val iconChange = when {

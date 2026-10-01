@@ -3,14 +3,12 @@ package com.aeibi.avd.feature.projects
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aeibi.avd.core.common.OperationResult
-import com.aeibi.avd.core.model.Project
 import com.aeibi.avd.core.ui.ContentState
 import com.aeibi.avd.core.ui.OperationState
 import com.aeibi.avd.core.ui.UiMessage
-import com.aeibi.avd.domain.project.CreateProjectUseCase
 import com.aeibi.avd.domain.project.CreateProjectRequest
+import com.aeibi.avd.domain.project.CreateProjectUseCase
 import com.aeibi.avd.domain.project.DeleteProjectUseCase
-import com.aeibi.avd.domain.project.LoadProjectIconUseCase
 import com.aeibi.avd.domain.project.ObserveProjectsUseCase
 import com.aeibi.avd.domain.project.RefreshProjectsUseCase
 import com.aeibi.avd.domain.project.UpdateProjectProfileRequest
@@ -36,7 +34,6 @@ class ProjectsViewModel @Inject constructor(
     private val refreshProjects: RefreshProjectsUseCase,
     private val createProject: CreateProjectUseCase,
     private val updateProjectProfile: UpdateProjectProfileUseCase,
-    private val loadProjectIcon: LoadProjectIconUseCase,
     private val deleteProject: DeleteProjectUseCase
 ) : ViewModel() {
     private val operation = MutableStateFlow<OperationState>(OperationState.Idle)
@@ -46,7 +43,7 @@ class ProjectsViewModel @Inject constructor(
         when (result) {
             is OperationResult.Failure -> ContentState.Error(result.error.toProjectsUiError())
             is OperationResult.Success -> {
-                val items = result.value.map { project -> project.toItem() }
+                val items = result.value.map { project -> project.toProjectItem() }
                 if (items.isEmpty()) ContentState.Empty else ContentState.Content(items)
             }
         }
@@ -122,13 +119,5 @@ class ProjectsViewModel @Inject constructor(
                 )
             }
         }
-    }
-
-    private suspend fun Project.toItem(): ProjectItem {
-        val icon = when (val result = loadProjectIcon(id)) {
-            is OperationResult.Success -> result.value
-            is OperationResult.Failure -> null
-        }
-        return toProjectItem(icon)
     }
 }

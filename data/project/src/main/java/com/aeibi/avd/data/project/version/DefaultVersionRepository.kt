@@ -45,27 +45,38 @@ internal class DefaultVersionRepository @Inject constructor(
         .onStart { emit(projectId) }
         .map { loadSnapshots(projectId) }
 
-    override suspend fun initialVersionState(projectId: ProjectId): OperationResult<InitialVersionState> =
-        mutationLease.withLease(projectId) {
-            workspaceUnavailable(projectId)?.let { return@withLease it }
-            val recorded = when (val exists = fileSystem.exists(ProjectStorageLayout.gitDirectory(projectId))) {
-                is FileSystemResult.Failure -> return@withLease failure(VersionDataError.OperationFailed)
-                is FileSystemResult.Success -> exists.value
-            }
-            if (recorded) {
-                when (val history = loadSnapshotsLocked(projectId)) {
-                    is OperationResult.Failure -> return@withLease history
-                    is OperationResult.Success -> Unit
-                }
-                return@withLease when (val status = git.status(repositoryLocator.locate(projectId))) {
-                    is GitResult.Failure -> failure(status.error.toVersionError())
-                    is GitResult.Success -> success(
-                        InitialVersionState(true, status.value.hasChanges)
-                    )
-                }
-            }
-            success(InitialVersionState(false))
+    override suspend fun initialVersionState(
+        projectId: ProjectId
+    ): OperationResult<InitialVersionState> = mutationLease.withLease(projectId) {
+        workspaceUnavailable(projectId)?.let { return@withLease it }
+        val recorded = when (
+            val exists = fileSystem.exists(
+                ProjectStorageLayout.gitDirectory(projectId)
+            )
+        ) {
+            is FileSystemResult.Failure -> return@withLease failure(
+                VersionDataError.OperationFailed
+            )
+            is FileSystemResult.Success -> exists.value
         }
+        if (recorded) {
+            when (val history = loadSnapshotsLocked(projectId)) {
+                is OperationResult.Failure -> return@withLease history
+                is OperationResult.Success -> Unit
+            }
+            return@withLease when (
+                val status = git.status(
+                    repositoryLocator.locate(projectId)
+                )
+            ) {
+                is GitResult.Failure -> failure(status.error.toVersionError())
+                is GitResult.Success -> success(
+                    InitialVersionState(true, status.value.hasChanges)
+                )
+            }
+        }
+        success(InitialVersionState(false))
+    }
 
     override suspend fun createInitialRevision(
         projectId: ProjectId
@@ -95,8 +106,11 @@ internal class DefaultVersionRepository @Inject constructor(
         val created = when (val initialized = git.initialize(stagedRepository)) {
             is GitResult.Failure -> failure(initialized.error.toVersionError())
             is GitResult.Success -> createCommit(
-                projectId, stagedRepository, VersionCreator.SYSTEM,
-                VersionSnapshotType.INITIALIZATION, null
+                projectId,
+                stagedRepository,
+                VersionCreator.SYSTEM,
+                VersionSnapshotType.INITIALIZATION,
+                null
             )
         }
         if (created is OperationResult.Failure) {
@@ -104,7 +118,8 @@ internal class DefaultVersionRepository @Inject constructor(
             return@mutate created
         }
         if (fileSystem.moveDirectoryAtomically(
-                stagingGit, ProjectStorageLayout.gitDirectory(projectId)
+                stagingGit,
+                ProjectStorageLayout.gitDirectory(projectId)
             ) is FileSystemResult.Failure
         ) {
             fileSystem.deleteDirectory(stagingProject)
@@ -175,8 +190,11 @@ internal class DefaultVersionRepository @Inject constructor(
     private suspend fun workspaceUnavailable(projectId: ProjectId): OperationResult.Failure? =
         when (val exists = fileSystem.exists(ProjectStorageLayout.workspaceDirectory(projectId))) {
             is FileSystemResult.Failure -> OperationResult.Failure(VersionDataError.OperationFailed)
-            is FileSystemResult.Success -> if (exists.value) null else
+            is FileSystemResult.Success -> if (exists.value) {
+                null
+            } else {
                 OperationResult.Failure(VersionDataError.RepositoryUnavailable)
+            }
         }
 
     private suspend fun existingInitialRevision(

@@ -25,10 +25,7 @@ class GetInitialVersionStateUseCase @Inject constructor(
         }
 }
 
-data class InitialVersionAvailability(
-    val recorded: Boolean,
-    val hasUnrecordedChanges: Boolean
-)
+data class InitialVersionAvailability(val recorded: Boolean, val hasUnrecordedChanges: Boolean)
 
 class RecordInitialVersionUseCase @Inject constructor(
     private val versionRepository: VersionRepository

@@ -2,11 +2,18 @@ package com.aeibi.avd.data.project.project
 
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
+import com.aeibi.avd.core.database.project.ProjectDao
+import com.aeibi.avd.core.database.project.ProjectIconRow
+import com.aeibi.avd.core.database.project.ProjectRow
+import com.aeibi.avd.core.database.project.ProjectWithIconRow
 import com.aeibi.avd.core.filesystem.ControlledFileSystem
 import com.aeibi.avd.core.filesystem.FileSystemResult
 import com.aeibi.avd.core.filesystem.RelativePath
+import com.aeibi.avd.core.model.ProjectIcon
 import com.aeibi.avd.data.project.ProjectMutationLease
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,14 +23,15 @@ import org.junit.Test
 
 class DefaultProjectRepositoryTest {
     @Test
-    fun `create persists a ready project with a workspace directory`() = runBlocking {
+    fun `create persists a project with a workspace directory`() = runBlocking {
         val fileSystem = FakeFileSystem()
-        val repository = repository(fileSystem)
+        val dao = FakeProjectDao()
+        val repository = repository(fileSystem, dao)
 
         val project = repository.createProject("Demo", "A demo", null).successValue()
 
         assertEquals("A demo", project.description)
-        assertTrue(fileSystem.texts.containsKey("projects/${project.id.value}/project.json"))
+        assertNotNull(dao.getProject(project.id.value))
         assertTrue(fileSystem.directories.contains("projects/${project.id.value}/workspace"))
         assertFalse(fileSystem.directories.contains("projects/${project.id.value}/git"))
         assertEquals(listOf(project), repository.observeProjects().first().successValue())
@@ -32,8 +40,9 @@ class DefaultProjectRepositoryTest {
     @Test
     fun `custom icon survives reload and can be read`() = runBlocking {
         val fileSystem = FakeFileSystem()
-        val icon = ProjectIconData.fromPng(png512())
-        val created = repository(fileSystem)
+        val dao = FakeProjectDao()
+        val icon = ProjectIcon.fromPng(png512())
+        val created = repository(fileSystem, dao)
             .createProject(
                 name = "Demo",
                 description = "",
@@ -41,36 +50,29 @@ class DefaultProjectRepositoryTest {
             )
             .successValue()
 
-        val reloaded = repository(fileSystem)
+        val reloaded = repository(fileSystem, dao)
         val restored = reloaded.observeProjects().first().successValue().single()
-        val loadedIcon = reloaded.loadIcon(created.id).successValue()
-
-        assertTrue(restored.hasCustomIcon)
-        assertNotNull(loadedIcon)
-        assertTrue(loadedIcon!!.copyPngBytes().contentEquals(png512()))
-        assertNotNull(
-            fileSystem.bytes.keys.single()
-                .substringAfterLast("icon-")
-                .removeSuffix(".png")
-                .toLongOrNull()
-        )
+        assertNotNull(restored.icon)
+        assertEquals(icon, restored.icon)
+        assertEquals(1, dao.icons.size)
     }
 
     @Test
     fun `update preserves historical icons when replacing or removing`() = runBlocking {
         val fileSystem = FakeFileSystem()
-        val repository = repository(fileSystem)
+        val dao = FakeProjectDao()
+        val repository = repository(fileSystem, dao)
         val created = repository.createProject(
             name = "Before",
             description = "",
-            icon = ProjectIconData.fromPng(png512())
+            icon = ProjectIcon.fromPng(png512())
         ).successValue()
 
         val replaced = repository.updateProfile(
             created.id,
             "After",
             "Updated",
-            ProjectIconDataChange.Replace(ProjectIconData.fromPng(png512()))
+            ProjectIconDataChange.Replace(ProjectIcon.fromPng(png512()))
         ).successValue()
         val removed = repository.updateProfile(
             created.id,
@@ -81,15 +83,14 @@ class DefaultProjectRepositoryTest {
 
         assertEquals(created.id, replaced.id)
         assertEquals("After", replaced.name)
-        assertTrue(replaced.hasCustomIcon)
-        assertFalse(removed.hasCustomIcon)
-        assertEquals(null, repository.loadIcon(created.id).successValue())
-        assertEquals(2, fileSystem.bytes.size)
+        assertNotNull(replaced.icon)
+        assertEquals(null, removed.icon)
+        assertEquals(2, dao.icons.size)
     }
 
     @Test
     fun `duplicate names are case insensitive`() = runBlocking {
-        val repository = repository(FakeFileSystem())
+        val repository = repository(FakeFileSystem(), FakeProjectDao())
         repository.createProject("Demo", "", null)
 
         val result = repository.createProject("demo", "", null)
@@ -99,7 +100,7 @@ class DefaultProjectRepositoryTest {
 
     @Test
     fun `delete is idempotent`() = runBlocking {
-        val repository = repository(FakeFileSystem())
+        val repository = repository(FakeFileSystem(), FakeProjectDao())
         val created = repository.createProject("Demo", "", null).successValue()
 
         assertTrue(repository.delete(created.id) is OperationResult.Success)
@@ -107,10 +108,56 @@ class DefaultProjectRepositoryTest {
         assertFalse(repository.observeProjects().first().successValue().any { it.id == created.id })
     }
 
-    private fun repository(fileSystem: FakeFileSystem) = DefaultProjectRepository(
-        fileSystem = fileSystem,
-        mutationLease = ProjectMutationLease()
-    )
+    private fun repository(fileSystem: FakeFileSystem, dao: FakeProjectDao) =
+        DefaultProjectRepository(
+            projectDao = dao,
+            fileSystem = fileSystem,
+            mutationLease = ProjectMutationLease()
+        )
+
+    private class FakeProjectDao : ProjectDao {
+        private val projects = MutableStateFlow<List<ProjectRow>>(emptyList())
+        val icons = mutableMapOf<Pair<String, String>, ByteArray>()
+
+        override fun observeProjects() = projects.map { rows -> rows.map(::withIcon) }
+
+        override suspend fun getProjects(): List<ProjectWithIconRow> =
+            projects.value.map(::withIcon)
+
+        override suspend fun getProjectWithIcon(id: String): ProjectWithIconRow? =
+            getProject(id)?.let(::withIcon)
+
+        override suspend fun getProject(id: String): ProjectRow? =
+            projects.value.firstOrNull { it.id == id }
+
+        override suspend fun nameExists(nameKey: String, exceptId: String): Boolean =
+            projects.value.any { it.nameKey == nameKey && it.id != exceptId }
+
+        override suspend fun getIcon(projectId: String, revision: String): ByteArray? =
+            icons[projectId to revision]?.copyOf()
+
+        private fun withIcon(project: ProjectRow): ProjectWithIconRow = ProjectWithIconRow(
+            project = project,
+            iconPng = project.iconRevision?.let { icons[project.id to it]?.copyOf() }
+        )
+
+        override suspend fun insertProject(project: ProjectRow) {
+            projects.value = projects.value + project
+        }
+
+        override suspend fun insertIcon(icon: ProjectIconRow) {
+            icons[icon.projectId to icon.revision] = icon.png.copyOf()
+        }
+
+        override suspend fun updateProject(project: ProjectRow) {
+            projects.value = projects.value.map { if (it.id == project.id) project else it }
+        }
+
+        override suspend fun deleteProject(id: String) {
+            projects.value = projects.value.filterNot { it.id == id }
+            icons.keys.removeAll { it.first == id }
+        }
+    }
 
     private class FakeFileSystem : ControlledFileSystem {
         val directories = mutableSetOf<String>()

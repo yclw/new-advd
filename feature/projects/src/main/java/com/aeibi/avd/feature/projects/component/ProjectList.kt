@@ -58,9 +58,10 @@ internal fun ProjectList(
 
 @Composable
 private fun ProjectIcon(project: ProjectItem) {
-    val bytes = project.icon?.copyPngBytes()
-    val image = remember(bytes?.contentHashCode()) {
-        bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+    val image = remember(project.icon) {
+        project.icon?.copyPngBytes()?.let { bytes ->
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+        }
     }
     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp)) {
         if (image == null) {

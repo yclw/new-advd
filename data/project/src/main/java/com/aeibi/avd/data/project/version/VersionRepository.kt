@@ -28,7 +28,4 @@ interface VersionRepository {
     ): OperationResult<VersionSnapshot>
 }
 
-data class InitialVersionState(
-    val recorded: Boolean,
-    val hasUnrecordedChanges: Boolean = false
-)
+data class InitialVersionState(val recorded: Boolean, val hasUnrecordedChanges: Boolean = false)
