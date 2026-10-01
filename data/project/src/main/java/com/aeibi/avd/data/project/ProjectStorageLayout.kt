@@ -27,9 +27,6 @@ internal object ProjectStorageLayout {
 
     fun gitDirectory(projectId: ProjectId): RelativePath = path("projects/${projectId.value}/git")
 
-    fun initialVersionPromptDismissedPath(projectId: ProjectId): RelativePath =
-        path("projects/${projectId.value}/initial-version-prompt-dismissed")
-
     fun stagingAssetsDirectory(projectId: ProjectId): RelativePath =
         path("projects/.staging/${projectId.value}/assets")
 

@@ -42,24 +42,23 @@ class DefaultVersionRepositoryTest {
 
         assertTrue(fileSystem.paths.contains("projects/project/git"))
         assertEquals(
-            InitialVersionState(recorded = true, showPrompt = false),
+            InitialVersionState(recorded = true),
             repository.initialVersionState(projectId).successValue()
         )
     }
 
     @Test
-    fun `postponing the first version persists without creating Git data`() = runBlocking {
+    fun `unrecorded project remains unrecorded on repeated state queries`() = runBlocking {
         val fileSystem = RecordingFileSystem()
         val repository = repository(FakeGit(), fileSystem)
 
         assertEquals(
-            InitialVersionState(recorded = false, showPrompt = true),
+            InitialVersionState(recorded = false),
             repository.initialVersionState(projectId).successValue()
         )
-        repository.postponeInitialVersion(projectId).successValue()
 
         assertEquals(
-            InitialVersionState(recorded = false, showPrompt = false),
+            InitialVersionState(recorded = false),
             repository.initialVersionState(projectId).successValue()
         )
         assertFalse(fileSystem.paths.contains("projects/project/git"))

@@ -19,7 +19,6 @@ class GetInitialVersionStateUseCase @Inject constructor(
             is OperationResult.Success -> OperationResult.Success(
                 InitialVersionAvailability(
                     result.value.recorded,
-                    result.value.showPrompt,
                     result.value.hasUnrecordedChanges
                 )
             )
@@ -28,16 +27,8 @@ class GetInitialVersionStateUseCase @Inject constructor(
 
 data class InitialVersionAvailability(
     val recorded: Boolean,
-    val showPrompt: Boolean,
     val hasUnrecordedChanges: Boolean
 )
-
-class PostponeInitialVersionUseCase @Inject constructor(
-    private val versionRepository: VersionRepository
-) {
-    suspend operator fun invoke(projectId: ProjectId): OperationResult<Unit> =
-        versionRepository.postponeInitialVersion(projectId)
-}
 
 class RecordInitialVersionUseCase @Inject constructor(
     private val versionRepository: VersionRepository

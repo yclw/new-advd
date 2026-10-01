@@ -13,8 +13,6 @@ interface VersionRepository {
 
     suspend fun initialVersionState(projectId: ProjectId): OperationResult<InitialVersionState>
 
-    suspend fun postponeInitialVersion(projectId: ProjectId): OperationResult<Unit>
-
     suspend fun createInitialRevision(projectId: ProjectId): OperationResult<VersionSnapshot>
 
     suspend fun createSnapshot(
@@ -32,6 +30,5 @@ interface VersionRepository {
 
 data class InitialVersionState(
     val recorded: Boolean,
-    val showPrompt: Boolean,
     val hasUnrecordedChanges: Boolean = false
 )

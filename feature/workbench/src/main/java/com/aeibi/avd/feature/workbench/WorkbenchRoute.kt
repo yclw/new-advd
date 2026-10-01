@@ -22,7 +22,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.domain.version.GetInitialVersionStateUseCase
-import com.aeibi.avd.domain.version.PostponeInitialVersionUseCase
 import com.aeibi.avd.domain.version.RecordInitialVersionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -66,7 +65,7 @@ fun WorkbenchRoute(
 
     if (state.showPrompt && !state.working) {
         AlertDialog(
-            onDismissRequest = { viewModel.postpone(projectId) },
+            onDismissRequest = viewModel::postpone,
             title = { Text(stringResource(R.string.workbench_version_prompt_title)) },
             text = {
                 Text(stringResource(
@@ -80,7 +79,7 @@ fun WorkbenchRoute(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.postpone(projectId) }) {
+                TextButton(onClick = viewModel::postpone) {
                     Text(stringResource(R.string.workbench_later))
                 }
             }
@@ -100,7 +99,6 @@ data class WorkbenchVersionState(
 @HiltViewModel
 class WorkbenchViewModel @Inject constructor(
     private val getInitialVersionState: GetInitialVersionStateUseCase,
-    private val postponeInitialVersion: PostponeInitialVersionUseCase,
     private val recordInitialVersion: RecordInitialVersionUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(WorkbenchVersionState())
@@ -114,7 +112,7 @@ class WorkbenchViewModel @Inject constructor(
                     loading = false,
                     recorded = result.value.recorded,
                     hasUnrecordedChanges = result.value.hasUnrecordedChanges,
-                    showPrompt = result.value.showPrompt
+                    showPrompt = !result.value.recorded
                 )
                 is OperationResult.Failure -> WorkbenchVersionState(loading = false, error = true)
             }
@@ -146,14 +144,8 @@ class WorkbenchViewModel @Inject constructor(
         }
     }
 
-    fun postpone(projectId: ProjectId) {
+    fun postpone() {
         if (_state.value.working) return
-        viewModelScope.launch {
-            _state.value = _state.value.copy(working = true)
-            _state.value = when (postponeInitialVersion(projectId)) {
-                is OperationResult.Success -> _state.value.copy(working = false, showPrompt = false)
-                is OperationResult.Failure -> _state.value.copy(working = false, error = true)
-            }
-        }
+        _state.value = _state.value.copy(showPrompt = false)
     }
 }

@@ -60,28 +60,11 @@ internal class DefaultVersionRepository @Inject constructor(
                 return@withLease when (val status = git.status(repositoryLocator.locate(projectId))) {
                     is GitResult.Failure -> failure(status.error.toVersionError())
                     is GitResult.Success -> success(
-                        InitialVersionState(true, false, status.value.hasChanges)
+                        InitialVersionState(true, status.value.hasChanges)
                     )
                 }
             }
-            when (val dismissed = fileSystem.exists(
-                ProjectStorageLayout.initialVersionPromptDismissedPath(projectId)
-            )) {
-                is FileSystemResult.Failure -> failure(VersionDataError.OperationFailed)
-                is FileSystemResult.Success -> success(InitialVersionState(false, !dismissed.value))
-            }
-        }
-
-    override suspend fun postponeInitialVersion(projectId: ProjectId): OperationResult<Unit> =
-        mutationLease.withLease(projectId) {
-            workspaceUnavailable(projectId)?.let { return@withLease it }
-            when (fileSystem.writeTextAtomically(
-                ProjectStorageLayout.initialVersionPromptDismissedPath(projectId),
-                "dismissed"
-            )) {
-                is FileSystemResult.Failure -> failure(VersionDataError.OperationFailed)
-                is FileSystemResult.Success -> success(Unit)
-            }
+            success(InitialVersionState(false))
         }
 
     override suspend fun createInitialRevision(
