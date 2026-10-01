@@ -1,7 +1,11 @@
 # 项目初始化（Blank）实现计划
 
-> 本文是 `:feature:projects`、`:domain:project`、`:data:project` 与
-> `:domain:version` 的实现契约。
+> 状态：Blank 初始化阶段的设计记录。后续功能与模块边界以
+> `ARCHITECTURE.md`、对应专项规范和当前实现为准；工作区 UI 的目标拆分见
+> [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
+
+> 本文记录 `:feature:projects`、`:domain:project`、`:data:project` 与
+> `:domain:version` 的阶段性实现契约。
 > 本期只实现**空白项目（Blank）初始化**；模板和导入不实现，但边界必须允许它们复用相同的发布、
 > Git 首版本和恢复流程。
 
@@ -394,9 +398,9 @@ repository 状态，以及以某 revision 覆盖 worktree 而不移动 `HEAD` �
 ViewModel 在初始化执行期间显示 operation state、禁用重复提交，并在成功后发出一次
 `NavigateToProject` effect。进程重启后的真相来自项目 status 和 journal 恢复结果，不来自旧 effect。
 
-`AppRoot` 当前的 nullable `selectedProjectId` 只能表示列表/Workbench；需改为能表达 List、Setup、
-Initializing 和 Workbench 的小型 sealed destination state，或接入等价导航图。返回列表必须清除当前
-destination；Workbench 入口仍只接受已验证 `READY` 项目。
+本计划编写时，`AppRoot` 的 nullable `selectedProjectId` 只能表示列表/Workbench。
+当前实现已使用 Navigation 3 的 List、Setup、Initializing 和 Workbench destination；
+继续扩展时应沿用稳定 ID 参数与现有导航图。Workbench 入口仍只接受已验证 `READY` 项目。
 
 ---
 

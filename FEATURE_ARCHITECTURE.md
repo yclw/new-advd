@@ -27,19 +27,23 @@ Feature 的产物是 UI，不是业务能力：
 
 ## 2. 模块划分与所有权
 
-按用户任务、共享上下文与发布节奏划分 Feature；不要仅因一个页面或一个 tab 就创建模块。
+按用户任务、状态 owner 与业务边界划分 Feature；共享同一个项目 ID 不意味着必须共用
+ViewModel 或模块，也不要仅因一个页面或一个 tab 就创建模块。
 
 | 模块 | UI owner | 不属于它的内容 |
 | --- | --- | --- |
 | `:feature:projects` | 项目列表、创建、编辑、初始化入口 | 工作区写入、模板展开、初始快照 |
-| `:feature:workbench` | 项目内聊天、会话抽屉、预览、控制台、局部控制；观察项目 runtime 快照并发送受限命令 | Agent runtime、文件／Git 操作、会话持久化、项目 runtime Job／server／lease |
+| `:feature:workbench` | 项目内容器、标题、Pane/Session 选择、跨功能入口与显式关闭确认 | 聊天时间线、Preview WebView、Console 日志、任何 runtime handle |
+| `:feature:chat`（计划） | 聊天时间线、草稿、会话抽屉、Agent 状态和会话操作 | Agent Job、会话持久化、项目文件 |
+| `:feature:preview`（计划） | 预览、WebView bridge、控制台与日志选择 | Preview backend、日志存储、项目文件 |
 | `:feature:templates` | 模板浏览、筛选与选择 | 模板下载、缓存与内容读取 |
 | `:feature:versions` | 快照历史、对比入口、恢复确认 UI | 快照恢复与文件替换 |
 | `:feature:settings` | 主题、语言、AI 配置页面 | DataStore、Keystore、AppCompat locale 调用 |
 | `:feature:build` | 构建相关页面与进度展示 | 构建执行与产物持久化 |
 
-以下情况才考虑新建 Feature：它有独立 owner、独立导航入口或发布节奏，且不会共享同一个
-页面级状态 holder。否则优先在现有 Feature 内以 Screen／Composable 拆分。
+文件浏览／编辑成为真实流程时，可建立 `:feature:files`。会话抽屉先留在 Chat，控制台先
+留在 Preview；只有它们获得独立 owner、导航生命周期或业务流程时再拆。工作区的具体
+组合、状态归属和迁移顺序见 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
 ## 3. 允许依赖与禁止依赖
 
@@ -49,22 +53,27 @@ Feature 的产物是 UI，不是业务能力：
   -> :core:ui / :core:designsystem  // 通用 UI 与设计 token
   -> :core:navigation               // 稳定 route 与仅含 ID 的参数
   -> :feature:<name>:api            // 仅在确有跨 feature 导航时
+:feature:workbench
+  -> :feature:chat / :feature:preview // 计划中的唯一容器到子功能例外
 ```
 
-对工作台而言，Feature 可以调用多个边界清晰的 domain：`:domain:agent` 处理 Agent turn，
-`:domain:preview` 处理 Preview，`:domain:project` 提供项目/Session 观察并编排显式关闭。Feature
-只观察这些 use case 的稳定状态、发送用户命令并保存 Pane/Session 的 UI 选择；它不持有任何 runtime。
+工作区容器通过 `:domain:project` 读取项目并请求显式关闭；Chat 通过 `:domain:agent`
+运行 turn，并通过经 domain 暴露的会话用例读写会话；Preview 通过 `:domain:preview`
+观察和控制预览。各 Feature 只观察稳定状态并发送命令，不持有 runtime。
 
 Feature 不能依赖：
 
 - `:data:*`、Repository、data DTO、Room entity、DAO、DataStore；
 - `:agent:runtime-koog`、Koog、模型／provider SDK、Agent tool；
 - `File`、文件路径、Git 类型、网络 client、`Context` 持久化访问；
-- 其他 Feature 的 Screen、ViewModel、内部 Compose component 或 implementation；
+- 其他 Feature 的 Screen、ViewModel 和内部组件。计划中的工作区容器只能调用 Chat／Preview
+  明确公开的 Route，不得读取它们的内部实现；其他 Feature 实现依赖仍禁止；
 - `:app`、`:shell`。
 
 Gradle 一律先使用 `implementation`。Feature 的 public API 不应泄露 domain 内部模型；只有
 跨 Feature 导航这一真实需求，才新增极小的 `:feature:<name>:api`，其中只放 route 与稳定 ID。
+**当前** `verifyModuleGraph` 不允许工作区容器依赖 Chat／Preview；新增这些模块的变更必须
+同步收窄地修改校验器及测试。文档中的目标依赖图不是当前已生效的检查规则。
 
 ## 4. 推荐目录与可见性
 
@@ -93,7 +102,8 @@ Gradle 一律先使用 `implementation`。Feature 的 public API 不应泄露 do
 
 - 默认使用 `internal`：页面组件、UI model、mapper、action、effect、bridge 与 Hilt module 都不应
   成为跨模块 API。
-- `Screen` 也不应被其他 Feature 直接调用；跨 Feature 由 app 根导航和 route 协调。
+- `Screen` 不应被其他 Feature 直接调用；顶层跨 Feature 导航由 app 根导航协调。
+  工作区容器只组合子功能公开的 Route，不能取得其 Screen 或 ViewModel。
 - 只有明确复用、没有业务归属的 UI 控件才可迁至 `:core:ui` 或 `:core:designsystem`；不能把某页
   的 state、文案、业务校验迁入 core。
 
@@ -106,6 +116,7 @@ Gradle 一律先使用 `implementation`。Feature 的 public API 不应泄露 do
 
 Route 参数只能是稳定 route、`ProjectId`、`SessionId` 等 ID 或可序列化的极小值对象；不得传递
 `Parcelable` 业务对象、Repository、ViewModel、`File`、Composable lambda 或 SDK object。
+容器与子功能之间的进程内 Compose 回调不是导航参数；不得把它们存入 back stack。
 
 ### 5.2 Screen：尽量纯的渲染函数
 
@@ -152,6 +163,8 @@ data class ProjectsUiState(
   error code／语义类型，再由 UI 映射文案。
 - 一个 Feature 可以有一个页面级 ViewModel；若独立子流程拥有自己的生命周期和状态，可建立
   子 ViewModel，但不能让多个 ViewModel 同时作为同一页面业务真相的 owner。
+- 工作区容器不汇总 Chat 消息、Preview 状态和 Console 日志为一个巨型 `UiState`；
+  各子功能分别映射自身的 domain 状态，容器仅保存项目和界面选择。
 
 ### 6.2 `Action`
 
@@ -221,6 +234,7 @@ bridge 可以引用 Android API，却只做平台输入输出转换：
 ## 9. 导航规范
 
 - 根导航由 `:app` 安装；Feature 定义自己的 route key 与参数解析，但不控制其他 Feature 的内部实现。
+- 项目内 Chat／Preview 的组合由工作区容器承担；它们不进入 app 的顶层项目列表导航图。
 - Feature 间仅传 route 和稳定 ID。目标页面重新通过 domain 加载数据，避免携带过期对象。
 - 若多个 Feature 必须直接使用同一 destination，只能新增极小 `:feature:<name>:api`；API 不包含
   Screen、ViewModel、Compose、Repository 或业务模型。
@@ -255,7 +269,9 @@ Hilt 只是实例化工具：Feature 可使用 `@HiltViewModel` 注入 domain us
 
 提交前检查：
 
-- [ ] Feature 只依赖 domain、允许的 core 与极小 feature API；没有 data／runtime import。
+- [ ] Feature 只依赖 domain、允许的 core、极小 feature API，以及已落地并经校验的工作区
+      容器例外；没有 data／runtime import。
+- [ ] 若新增工作区子功能，容器只依赖明确允许的公开 Route，且模块图校验和反例测试已同步更新。
 - [ ] ViewModel 只调用 use case，没有 Repository、平台对象或 SDK client。
 - [ ] Screen 能由明确 `UiState` 独立渲染，action 语义清楚。
 - [ ] 持久状态在 `UiState`／domain，单次行为在 `UiEffect`。

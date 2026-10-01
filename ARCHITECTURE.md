@@ -10,6 +10,7 @@
 | 应用工作流、错误、取消与恢复 | [DOMAIN_ARCHITECTURE.md](DOMAIN_ARCHITECTURE.md) |
 | Agent runtime、工具与 SDK 边界 | [AGENT_ARCHITECTURE.md](AGENT_ARCHITECTURE.md) |
 | Feature UI、导航、状态、effect 与平台 bridge | [FEATURE_ARCHITECTURE.md](FEATURE_ARCHITECTURE.md) |
+| 项目工作区容器与子功能组合 | [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md) |
 | 项目级临时运行资源、关闭与进程死亡恢复 | [PROJECT_RUNTIME_ARCHITECTURE.md](PROJECT_RUNTIME_ARCHITECTURE.md) |
 
 旧的 `android-vibe-design/` 仅是实现历史，不是新工程的架构依据。即使旧实现采用不同方式，新增代码仍必须遵循上述专项文档。
@@ -40,6 +41,8 @@ graph TD
 
     feature --> domain[":domain:*"]
     feature --> featureApi[":feature:*:api"]
+    workbench[":feature:workbench 目标容器"] --> chat[":feature:chat 计划中"]
+    workbench --> previewUi[":feature:preview 计划中"]
     feature --> uiCore[":core:ui / :core:designsystem / :core:navigation"]
 
     domain --> data[":data:*"]
@@ -59,12 +62,17 @@ graph TD
 1. `:core:*` 不依赖 data、domain、feature、agent、app 或 shell 模块。
 2. `:data:*` 只能依赖 core 和获准的 contract；不得依赖 feature、domain、app 或 Agent runtime 实现。
 3. `:domain:*` 可以依赖 data 资源契约、`:core:common`、`:core:model`、`:core:logging` 和必要的 `:contract:*`；不得依赖其他 domain、feature、app 或 runtime 实现模块。
-4. `:feature:*` 只依赖 domain 与 UI 相关 core；不得依赖 data、存储型技术 core、contract 或 runtime 实现。
-5. Feature 不得 import 另一个 feature 的实现；仅在真实跨 feature destination 存在时，才允许薄的 `:feature:<name>:api`。
+4. 现行 `:feature:*` 可依赖 domain、core 与极小的 `:feature:*:api`；不得依赖 data、
+   contract 或 runtime 实现。目标工作区容器例外见下一条。
+5. 现行校验禁止 Feature 依赖另一个 Feature 的实现。目标工作区设计增加唯一的
+   `:feature:workbench -> :feature:chat/:feature:preview` 容器依赖例外；创建子模块时必须
+   同步修改 `verifyModuleGraph` 及反例测试。在此之前该例外还不是可构建的依赖规则。
+   其他跨 Feature 导航仍只通过 `:app` 或极小的 `:feature:<name>:api`。
 6. `:app` 是 Android composition root，负责 Application 设置、根导航和安装 feature entry；不放 Screen、ViewModel、Repository 或业务工作流。
 7. `:shell` 是独立 APK，不依赖业务 feature。
 
-`verifyModuleGraph` 与 `verifyArchitectureSources` 已接入 `check`。违反这些依赖或源码边界会使构建失败，而不是仅产生 review 建议。
+`verifyModuleGraph` 与 `verifyArchitectureSources` 已接入 `check`。前者目前强制的是上述
+**现行**模块图，尚未实现计划中的容器依赖例外；文档规则变更须与校验器变更一起交付。
 
 ## 当前模块职责
 
@@ -73,25 +81,28 @@ graph TD
 | App 与构建 | `:app`、`:shell`、`:build-logic:convention` | 组合、APK 入口和共享 Gradle convention。 |
 | 共享 core | `:core:common`、`:core:model`、`:core:logging`、`:core:navigation`、`:core:designsystem`、`:core:ui`、`:core:testing` | 稳定基础类型、模型、日志、导航、UI 基础与测试支持。 |
 | 技术 core | `:core:database`、`:core:datastore`、`:core:filesystem`、`:core:git`、`:core:secure-storage`、`:core:network` | 仅封装技术适配，不带业务资源语义。 |
-| 数据资源 | `:data:workspace`、`:data:template`、`:data:session`、`:data:ai-config`、`:data:settings`、`:data:runtime-log` | 资源契约、默认实现、存储一致性和资源级错误。 |
+| 数据资源 | `:data:project`、`:data:template`、`:data:session`、`:data:ai-config`、`:data:settings` | 资源契约、默认实现、存储一致性和资源级错误；工作区文件、版本和 Preview 日志归 `:data:project`。 |
 | Agent 与项目 runtime 契约／引擎 | `:contract:agent`、`:contract:project-runtime`、`:agent:runtime-koog` | SDK 无关的 Agent 工具协议、项目关闭 lifecycle port 及 Koog 实现。 |
-| Domain 工作流 | `:domain:workspace`、`:domain:agent`、`:domain:preview`、`:domain:settings` | 跨资源应用操作及业务语义。 |
+| Domain 工作流 | `:domain:project`、`:domain:template`、`:domain:version`、`:domain:agent`、`:domain:preview`、`:domain:settings` | 跨资源应用操作及业务语义。 |
 | UI Feature | `:feature:projects`、`:feature:workbench`、`:feature:templates`、`:feature:versions`、`:feature:settings`、`:feature:build` | 面向用户的流程、页面状态与平台 bridge。 |
 
-初始阶段保持 `:feature:workbench` 完整：Chat、会话抽屉、Preview 与 Console 共享项目上下文且 UI 高内聚。只有它们获得真正独立的 owner、导航边界或发布节奏时才拆分。
+当前 `:feature:workbench` 只有占位 Route。目标是让它仅承担项目内容器职责，另建
+`:feature:chat`（含会话抽屉）与 `:feature:preview`（含控制台）。这两个模块尚未出现在
+`settings.gradle.kts`；职责、依赖方向和迁移门槛见
+[WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
 ## 所有权规则
 
 | 关注点 | Owner | 明确不属于 |
 | --- | --- | --- |
-| 用户意图、渲染、UI state、Activity Result / WebView bridge | `:feature:*` | Repository、Agent runtime、filesystem、Git、SDK client |
+| 用户意图、渲染、UI state、Activity Result / WebView bridge | 各业务 `:feature:*`；Workbench 只组合子功能 | Repository、Agent runtime、filesystem、Git、SDK client |
 | 命名的应用工作流、授权、顺序与恢复策略 | `:domain:*` | Composable、ViewModel、DAO、SDK adapter |
 | 项目文件、会话、模板、配置与 runtime-log 数据 | 对应 `:data:*` | Feature 或其他 data 模块 |
 | Room、DataStore、filesystem、Git、Keystore 与 HTTP 机制 | 对应技术 `:core:*` | Domain 业务策略 |
 | 模型流式输出与工具调用轮次 | `:agent:runtime-koog` | 项目／会话语义、授权、data gateway 发现 |
 | Agent 工具选择、scope、授权、快照与恢复 | `:domain:agent` | Runtime 实现、全局工具注册表、ViewModel |
 | Preview server 与 Preview runtime state | `:domain:preview` | WebView、ViewModel、Agent |
-| 项目 runtime 的显式关闭与跨资源恢复顺序 | `:domain:workspace` | Feature、data、Agent 或 Preview 内部实现 |
+| 项目 runtime 的显式关闭与跨资源恢复顺序 | `:domain:project` | Feature、data、Agent 或 Preview 内部实现 |
 
 Repository 是普通数据资源的唯一公开入口：它暴露稳定资源模型、观察用 `Flow`，以及带稳定结果／错误语义的 `suspend` 命令。storage entity、DAO、`File`、`Uri`、绝对路径、Android `Context`、Git object 与 SDK 类型不得越过 data 边界。资源专属的 Agent tool factory 是窄例外：只有该资源真正拥有 Agent 工具时才定义，具体规则见 Agent 专项文档。
 
@@ -115,7 +126,7 @@ Workbench 的 Project Runtime 精确策略（Preview backend owner、Agent conti
 不得从 Composable、ViewModel 或 Hilt scope 推断。
 
 Project Runtime 不由单一 manager 持有全部状态：`:domain:agent` 和 `:domain:preview` 各自拥有其
-独立 runtime；`:domain:workspace` 只通过 `:contract:project-runtime` 的窄 port 执行项目关闭与恢复
+独立 runtime；`:domain:project` 只通过 `:contract:project-runtime` 的窄 port 执行项目关闭与恢复
 编排。具体 API 与顺序见专项文档。
 
 ## 交付与评审规则
@@ -127,4 +138,6 @@ Project Runtime 不由单一 manager 持有全部状态：`:domain:agent` 和 `:
 5. 每个新 Agent 工具必须定义资源 owner、schema、授权、输出限制、secret 处理与测试。
 6. 模块依赖、公开契约或边界规则变更时，必须在同一变更中更新本文、对应专项文档和架构校验测试。
 
-初始实施顺序是：工作区生命周期与恢复、项目 UI、会话／配置与 Agent 工作流、Workbench UI，最后是模板／版本／设置／构建 feature。每个 vertical slice 在进入下一个前都必须通过 `./gradlew check`。
+工作区后续迁移按 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md) 的阶段推进。
+已有项目 CRUD、初始化与设置实现不因该顺序回退。每个 vertical slice 在进入下一个前
+都必须通过 `./gradlew check`。

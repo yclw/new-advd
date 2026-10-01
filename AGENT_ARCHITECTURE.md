@@ -11,7 +11,7 @@ Agent runtime 是可替换的技术实现；工具则是具体业务资源的适
 拥有相同上下文**。
 
 ```text
-:feature:workbench
+:feature:chat（目标模块；当前尚未创建）
         │
         ▼
 :domain:agent ──────────────> :contract:agent <──── :agent:runtime-koog
@@ -79,7 +79,7 @@ Composable
   -> RunAgentTurnUseCase (:domain:agent)
   -> 校验 AI 配置、项目状态、授权与锁
   -> 按需要调用 WorkspaceAgentTools / SessionAgentTools / ...（各自 data 契约）
-  -> AgentTurnReceipt（请求已持久化并被 runtime 接受）
+  -> AgentTurnReceipt（当前仅表示进程内请求被接受；持久化仍待实现）
 
 AgentRuntimeCoordinator child scope
   -> List<AgentTool>（每个工具已经绑定自己的精确参数）
@@ -88,12 +88,15 @@ AgentRuntimeCoordinator child scope
   -> 模型与 tool-result rounds
   -> AgentRuntimeEvent
   -> AgentRuntimeSnapshot / future session journal
-  -> ViewModel 通过 named observation use case 渲染
+  -> Chat ViewModel 通过 named observation use case 渲染
 ```
 
 当前尚无真实 data tool，因此 `RunAgentTurnUseCase` 暂时传递空工具列表；这只是 runtime
 骨架，不是默认的工具注册机制。第一个真实工具落地时，应同时加入对应 data gateway、domain
 调用与测试。
+
+当前 coordinator 也尚未校验项目／会话／AI 配置或记录持久 turn 事件；下节列的是
+目标职责，不应把占位 `KoogAgentRuntime` 的完成事件当作真实回复或持久成功。
 
 ## 5. `:domain:agent`：Agent 策略与编排 owner
 

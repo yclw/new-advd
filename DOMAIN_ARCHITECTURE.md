@@ -23,7 +23,7 @@ Domain 是 feature 使用业务能力的唯一入口。它不显示 UI，不持�
 Room、DataStore、文件、Git、网络、Keystore 或 Koog SDK；它定义“应用要完成什么操作、
 按什么业务顺序完成、失败后对调用者意味着什么”。
 
-当前业务 owner：
+以下是模块的业务所有权；已创建模块不代表表中每项能力都已经实现：
 
 | 模块 | 负责的业务能力 |
 | --- | --- |
@@ -36,6 +36,11 @@ Room、DataStore、文件、Git、网络、Keystore 或 Koog SDK；它定义“�
 
 不要为每个 feature 或每个 Repository 自动创建 domain 模块。只有一个业务区域拥有稳定的
 应用操作、工作流或独立发布边界时才拆分。
+
+工作区目标拆分后，`:domain:project` 经 `:data:session` 暴露会话列表、消息历史与会话操作的
+命名用例，`:domain:agent` 负责发起／取消 turn 和观察 Agent 状态，`:domain:preview`
+负责预览状态与命令。这些会话用例及其持久实现目前尚未落地；不得让 Chat 为了赶进度
+直接注入 `SessionRepository`。详见 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
 ## 2. Domain 应做什么、不应做什么
 
@@ -137,7 +142,7 @@ suspend operator fun invoke(request: RunAgentTurnRequest): OperationResult<Agent
 | 多 Repository 的顺序、业务校验、幂等、恢复、发布状态 | `:domain:<area>` |
 | 页面状态、权限弹窗、文件选择、Snackbar、导航 | `:feature:<area>` |
 
-例如恢复版本快照：domain 检查项目状态、权限与运行中 Agent；data/workspace 执行受控的
+例如恢复版本快照：domain 检查项目状态、权限与运行中 Agent；`:data:project` 执行受控的
 文件／Git 恢复；domain 再发出稳定结果或恢复事件。页面只渲染状态和请求用户确认。
 
 ### 4.2 长事务与恢复

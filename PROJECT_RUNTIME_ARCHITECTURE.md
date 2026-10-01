@@ -28,8 +28,9 @@ ProjectRuntime (in memory, one per ProjectId per process)
 - 进程死亡不依赖任何内存回调，而从持久记录恢复到可解释的状态；
 - application scope、Foreground Service、WorkManager 只承载执行，不悄悄取得业务 ownership。
 
-非目标：不建立全局服务定位器，不复制 IntelliJ/Theia 的 DI 或 SPI 框架，不自动将所有长任务
-改成 Foreground Service 或 WorkManager，也不把 Chat/Preview/Console 提前拆为 feature 模块。
+非目标：不建立全局服务定位器，不复制大型 IDE 的 DI 或 SPI 框架，也不自动将所有长任务
+改成 Foreground Service 或 WorkManager。工作区 UI 的模块拆分由
+[WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md) 定义；runtime owner 不因 UI 拆分而改变。
 
 ## 2. 生命周期树与模块归属
 
@@ -43,8 +44,9 @@ Android application process
       └─ PreviewRuntimeCoordinator                    [:domain:preview]
           └─ PreviewRuntime(projectId)                 [internal]
 
-:feature:workbench
-  └─ ViewModels call named use cases and observe their state
+:feature:workbench                  [项目内容器]
+  ├─ :feature:chat                 [观察 Agent／Session]
+  └─ :feature:preview              [观察 Preview／Console]
 
 :domain:project
   └─ CloseProjectRuntimeUseCase / RecoverProjectUseCase
@@ -64,10 +66,14 @@ Agent turn 与 Preview server 有不同的启动条件、状态、恢复能力�
 entry 或 ViewModel 销毁变成资源关闭条件。因此它们各自拥有独立 coordinator：
 
 ```text
-:feature:workbench -> :domain:agent -> :data:project / :data:session / :data:ai-config / :contract:agent
-                   -> :domain:preview -> :data:project
-                   -> :domain:project -> :contract:project-runtime
+:feature:workbench -> :domain:project -> :contract:project-runtime
+:feature:chat      -> :domain:agent   -> :data:project / :data:session / :data:ai-config / :contract:agent
+                   -> :domain:project // 经命名用例访问会话
+:feature:preview   -> :domain:preview -> :data:project
 ```
+
+Chat／Preview 子模块和上述容器依赖仍是目标状态，尚未在当前工程中创建或放行；
+实际模块图和迁移门槛见工作区 UI 文档。
 
 `:domain:project` 继续负责项目的创建、删除、导入导出和持久工作区恢复；快照工作流属于
 `:domain:version`。“关闭项目
@@ -86,7 +92,9 @@ runtime”只关闭临时执行资源，不删除或修改 Project 实体。它�
 | Agent execution Job | `:domain:agent` 的 `AgentRuntimeCoordinator` | 观察 Agent state、发送受限命令 |
 | Preview 的受控 root、backend handle 与 Preview state | `:domain:preview` 的 `PreviewRuntimeCoordinator` | WebView 仅为 client |
 | 项目关闭顺序与跨资源恢复 | `:domain:project` | 请求关闭、观察结果 |
-| 抽屉、当前 Pane、WebView、滚动位置、草稿 | `:feature:workbench` | 自己拥有 |
+| 当前 Pane、选中的 Session ID、工作区级确认 UI | `:feature:workbench` | 自己拥有 |
+| 会话抽屉、聊天滚动位置和草稿 | `:feature:chat`（计划） | 自己拥有 |
+| WebView 与控制台选择状态 | `:feature:preview`（计划） | 自己拥有 |
 
 项目 runtime 资源不是 Repository，不能持久化为 `ProjectRuntimeEntity`；也不是 Agent runtime，不能将
 ProjectId、SessionId、文件或 Git 注入 `:agent:runtime-koog`。
@@ -133,35 +141,41 @@ class CancelAgentTurnUseCase { suspend operator fun invoke(projectId: ProjectId,
 // :domain:project
 class RequestProjectRuntimeCloseUseCase { suspend operator fun invoke(projectId: ProjectId): CloseRequestResult }
 class ConfirmProjectRuntimeCloseUseCase { suspend operator fun invoke(projectId: ProjectId): OperationResult<Unit> }
-class RecoverProjectUseCase { suspend operator fun invoke(projectId: ProjectId): OperationResult<ProjectRecoveryResult> }
+class RecoverProjectUseCase { suspend operator fun invoke(request: RecoverProjectRequest): OperationResult<ProjectRecoveryResult> }
 ```
+
+上面列的是**当前公开方法的形状**；`RecoverProjectRequest` 中是否存在未完成 turn 的事实
+目前仍由调用方提供。待持久 journal 完成后，这个事实应由恢复工作流从 data 读取，
+不能由 Feature 猜测或伪造。
 
 约束如下：
 
 1. `StartPreviewUseCase` 与 `RunAgentTurnUseCase` 在必要时创建各自的 runtime；任何 observe use case
    都不应因 UI collector 出现而隐式启动 Agent 或 Preview。
-2. `RequestProjectRuntimeCloseUseCase` 可以返回 `NeedsConfirmation`，因为运行中的 turn、Git 或写
-   lease 需要用户明确确认；用户取消确认即取消关闭请求，不能把“后台继续”伪装成已关闭。
+2. 当前 `RequestProjectRuntimeCloseUseCase` 在运行中的 Agent turn 存在时返回
+   `NeedsConfirmation`。目标实现还要检查 Git／写 lease；用户取消确认即取消关闭请求，
+   不能把“后台继续”伪装成已关闭。
 3. `RunAgentTurnUseCase` 只接收稳定 ID、prompt 和幂等 key；它不接收 WebView、File、Uri、SDK object 或
    lambda callback。
 4. domain API 不暴露 coordinator、`Job`、`Mutex`、server handle、port、异常对象或 data DTO。
 5. 每个 runtime 只串行化自己拥有的状态；同一 turn `idempotencyKey` 重试必须返回原 receipt 或
    已知终态，不能并行启动第二个 turn。
 
-这些 command use case 只负责校验、持久化请求并把工作交给 runtime；receipt 表示请求已被接受或
-拒绝，**不是** server 已启动或 Agent 已完成。Feature 通过各自的 observe use case 观察 Preview/turn
+目标协议要求 command use case 校验并持久化请求，再把工作交给 runtime。**当前实现尚未持久化**
+Agent turn 或 Preview 请求；现有 receipt 仅表示进程内请求被接受，**不是** server 已启动或
+Agent 已完成。Feature 通过各自的 observe use case 观察 Preview/turn
 的真实后续状态；会话消息和历史则通过独立的 session observation use case 读取。
 
-当前选中的 `SessionId` 是 `feature:workbench` 的 navigation/UI state。切换抽屉选中项、恢复滚动位置
+当前选中的 `SessionId` 是 `:feature:workbench` 的 navigation/UI state。切换抽屉选中项、恢复滚动位置
 或打开另一个聊天记录不会重启 runtime；只有 `RunAgentTurnRequest.sessionId` 将某次 turn 明确关联到
 一个持久 Session。
 
-`ChatViewModel.viewModelScope` 不得 collect 或拥有实际 Agent Job。`AgentRuntimeCoordinator` 的 child
+Chat ViewModel 的 `viewModelScope` 不得 collect 或拥有实际 Agent Job。`AgentRuntimeCoordinator` 的 child
 scope 是执行 Agent runtime Flow、记录事件、更新状态和处理取消的唯一 owner。
 
 ### 3.1 Feature 调用示例
 
-启动 Preview 是一次短暂的 use case 调用；ViewModel 等待的是“请求已受理”，而不是它所拥有的
+启动 Preview 是一次短暂的 use case 调用；Preview ViewModel 等待的是“请求已受理”，而不是它所拥有的
 server Job：
 
 ```kotlin
@@ -176,15 +190,15 @@ val preview: StateFlow<PreviewRuntimeSnapshot> =
     observePreviewRuntimeUseCase(projectId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(), initial)
 ```
 
-运行 Agent 同样先获得 receipt；实际 streaming、工具调用、写 lease 和取消全部在 Agent coordinator
-的 runtime scope 中：
+运行 Agent 同样先获得 receipt；目标实现中的实际 streaming、工具调用、写 lease 和取消
+全部在 Agent coordinator 的 runtime scope 中。当前 coordinator 尚未实现持久事件与 lease：
 
 ```kotlin
-fun runTurn(prompt: String) = viewModelScope.launch {
+fun runTurn(prompt: String, sessionId: SessionId) = viewModelScope.launch {
     runAgentTurnUseCase(
         RunAgentTurnRequest(
             projectId = projectId,
-            sessionId = selectedSessionId,
+            sessionId = sessionId,
             prompt = prompt,
             idempotencyKey = newOperationId(),
         ),
@@ -214,7 +228,7 @@ sealed interface PreviewRuntimeSnapshot {
     data object Starting : PreviewRuntimeSnapshot
     data class Running(val endpoint: PreviewEndpoint, val contentRevision: Long) : PreviewRuntimeSnapshot
     data object Stopping : PreviewRuntimeSnapshot
-    data class Failed(val error: PreviewError) : PreviewRuntimeSnapshot
+    data class Failed(val error: PreviewRuntimeError) : PreviewRuntimeSnapshot
 }
 ```
 
@@ -293,9 +307,13 @@ RunAgentTurn
 “关闭项目”是一个业务工作流，必须幂等、可观察、可等待。它不是 `ViewModel.onCleared()`，也不
 是导航 back stack 的副作用。
 
+以下是**目标协议**。当前 `ConfirmProjectRuntimeCloseUseCase` 仅请求／等待 Agent 停止、停止
+Preview 并完成进程内关闭；持久 close intent、writer/Git lease 等待和恢复记录尚未接入。
+不得因目标步骤写在本文中就认为当前删除路径已具备完整的持久恢复保证。
+
 ```text
 1. Admission barrier
-   CloseProjectRuntimeUseCase 持久化 close/cancel intent；通过 Agent port 拒绝新的 Agent turn。
+   ConfirmProjectRuntimeCloseUseCase 持久化 close/cancel intent；通过 Agent port 拒绝新的 Agent turn。
 
 2. Stop writers first
    调用 AgentProjectRuntimeControl.requestStop(projectId)，请求正在运行的 turn cooperative cancellation。
@@ -387,16 +405,17 @@ continuation 时，才在用户确认后以新的、带幂等 key 的 operation 
 
 迁移顺序应是：
 
-1. 在 data/session 与 data/workspace 建立最小 turn/mutation recovery record 和 lease contract；
+1. 在 `:data:session` 与 `:data:project` 建立最小 turn/mutation recovery record 和 lease contract；
 2. 在 domain/agent 完成可取消、可持久化事件的 Agent runtime coordinator；
 3. 创建 domain/preview，完成独立 Preview runtime coordinator 与 `Start/Stop/Observe` use case；
 4. 新建 `:contract:project-runtime` 的两个固定 lifecycle port，并由 domain/agent 与 domain/preview 实现；
-5. 在 domain/workspace 实现无状态的 close/recovery orchestrator；
-6. 让 `feature:workbench` 仅调用命名 use case、分别映射 Agent 与 Preview state；
+5. 在 `:domain:project` 实现无状态的 close/recovery orchestrator；
+6. 将容器、Chat、Preview 按工作区 UI 文档拆分，各自只调用命名 use case；
 7. 最后删除 ViewModel/server/SharedFlow ownership，并为进程中断和关闭顺序补测试。
 
-当前框架已完成第 2–5 步中的 runtime owner、port、关闭顺序和 unit test。受控 workspace root、真实
-Preview backend、write/Git lease 与 durable turn/mutation journal 尚未在新工程 data 层实现；在它们迁移前，
+当前框架已有 Agent／Preview 的进程内 coordinator、生命周期 port、部分关闭顺序和 unit test，
+但第 1–5 步尚未全部完成：受控 workspace root、真实 Preview backend、write/Git lease、
+durable turn/mutation journal 与完整关闭／恢复流程仍待实现。在它们迁移前，
 `UnavailablePreviewBackend` 会返回稳定的 `preview_backend_not_configured`，而不会退回由 Feature 持有 server。
 
 ## 10. 最低验证矩阵
@@ -416,20 +435,3 @@ Preview backend、write/Git lease 与 durable turn/mutation journal 尚未在新
 测试以 fake `AgentRuntime`、fake preview gateway、fake clock、可控 lease 和临时 workspace 为主。测试
 不得要求启动真实 WebView、Koog provider 或完整 Android app；文件/Git 原子性在 data/core 集成测试中
 验证，domain/runtime 重点验证顺序、取消、状态和恢复语义。
-
-## 11. 参考实现来源
-
-- IntelliJ 的 Project owner、scope cancellation 与 dispose 顺序：
-  [ProjectManagerImpl.kt](../reference-projects/intellij-community/platform/platform-impl/src/com/intellij/openapi/project/impl/ProjectManagerImpl.kt)、
-  [ComponentManagerImpl.kt](../reference-projects/intellij-community/platform/service-container/src/com/intellij/serviceContainer/ComponentManagerImpl.kt)。
-- VS Code 的可等待、有序 shutdown joiner 与 storage scope：
-  [lifecycleService.ts](../reference-projects/vscode/src/vs/workbench/services/lifecycle/electron-browser/lifecycleService.ts)、
-  [storage.ts](../reference-projects/vscode/src/vs/platform/storage/common/storage.ts)。
-- JupyterLab 对 context dispose 与 explicit session shutdown 的分离：
-  [sessioncontext.tsx](../reference-projects/jupyterlab/packages/apputils/src/sessioncontext.tsx)。
-- Coder 对持久 workspace transition、agent lifecycle 和日志的建模：
-  [000003_workspaces.up.sql](../reference-projects/coder/coderd/database/migrations/000003_workspaces.up.sql)、
-  [models.go](../reference-projects/coder/coderd/database/models.go)。
-- OpenHands 前端将 websocket/UI state 与远端 conversation 控制命令分离：
-  [conversation-websocket-context.tsx](../reference-projects/openhands/src/contexts/conversation-websocket-context.tsx)、
-  [conversation-mutation-utils.ts](../reference-projects/openhands/src/hooks/mutation/conversation-mutation-utils.ts)。

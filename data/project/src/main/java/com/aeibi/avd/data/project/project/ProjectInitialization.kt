@@ -14,12 +14,8 @@ import kotlinx.serialization.Serializable
 
 data class InitialWorkspaceContent(val files: List<InitialWorkspaceFile>) {
     init {
-        require(files.size <= MAX_FILE_COUNT) { "Initial workspace has too many files." }
         require(files.map { it.relativePath }.distinct().size == files.size) {
             "Initial workspace contains duplicate paths."
-        }
-        require(files.sumOf { it.content.toByteArray(Charsets.UTF_8).size } <= MAX_TOTAL_BYTES) {
-            "Initial workspace is too large."
         }
     }
 }
@@ -27,9 +23,6 @@ data class InitialWorkspaceContent(val files: List<InitialWorkspaceFile>) {
 data class InitialWorkspaceFile(val relativePath: String, val content: String) {
     init {
         require(RelativePath.of(relativePath) != null) { "Initial workspace path is invalid." }
-        require(content.toByteArray(Charsets.UTF_8).size <= MAX_FILE_BYTES) {
-            "Initial workspace file is too large."
-        }
     }
 }
 
@@ -99,10 +92,6 @@ internal class InitializationJournalStore @Inject constructor(
         ProjectStorageLayout.initializationJournalPath(projectId)
     ) is FileSystemResult.Success
 }
-
-private const val MAX_FILE_COUNT = 1_000
-private const val MAX_FILE_BYTES = 1 * 1024 * 1024
-private const val MAX_TOTAL_BYTES = 10 * 1024 * 1024
 
 private val initializationJournalJson = kotlinx.serialization.json.Json {
     ignoreUnknownKeys = false

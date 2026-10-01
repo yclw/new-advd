@@ -29,7 +29,7 @@
 4. 仅被一个 data 模块使用、尚未证明可复用的技术 helper，先放该 data 模块的 `internal`
    包；不要预先创建 core API。
 
-## 2. 当前模块关系
+## 2. 模块关系与实现状态
 
 ```text
 :data:project ───┬─> :core:filesystem
@@ -45,9 +45,15 @@
 :feature:* ───────> :domain:* / UI 相关 :core:*
 ```
 
-“按需接入”很重要：已创建的 core 技术模块目前只建立了可验证的 Gradle 边界和职责，
-没有虚构 Room schema、Git facade 或网络 client。第一个真实 vertical slice 需要某项能力时，
-才在相应 core 模块实现并让 data 模块依赖它。
+“按需接入”很重要：`:core:filesystem` 和 `:core:git` 已为项目初始化提供受控实现；
+其他技术模块仍可能只有边界或基础实现。只有真实 vertical slice 需要某项能力时，
+才在相应 core 模块实现并让 data 模块依赖它，不预建 Room schema 或网络 client。
+
+上图中未标“按需接入”的箭头表示已声明的模块依赖，不保证对应资源能力已经实现。
+当前 `:data:project` 有项目元数据和初始版本实现，但 `WorkspaceRepository` 仍只有契约；
+`:data:session` 只有 `SessionRepository` 契约，消息与 turn journal 尚无实现；
+Preview 日志只有仓库接口。工作区 Chat／Preview 接入前，应先补齐所需实现与测试，
+不能把下面的资源所有权表误读为完成清单。
 
 ## 3. `:data:<area>` 的职责
 
@@ -207,7 +213,10 @@ shell。只有某项技术能力确实要建立在另一项更基础的 core 技
 | `:core:<technology>` | 默认无；有明确技术分层时可依赖更低层 `:core:*` | data、domain、feature、contract、agent、app、shell |
 | `:data:<area>` | `:core:*`、经批准的 `:contract:*` | 其他 data、domain、feature、agent runtime、app、shell |
 | `:domain:<area>` | `:data:*`、`core:common/model`、必要 contract | feature、app、storage SDK 类型 |
-| `:feature:<area>` | domain 与 UI 相关 core | data、技术 core 存储模块、contract、runtime |
+| `:feature:<area>` | domain 与 UI 相关 core；未来工作区容器还有受限子功能 Route 依赖 | data、技术 core 存储模块、contract、runtime；子功能之间互相依赖 |
+
+工作区容器例外尚未被当前模块图校验器允许；具体范围与迁移门槛见
+[WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
 默认使用 Gradle `implementation`。只有公开 API 的签名确实包含某个依赖的刻意类型时才使用
 `api`；技术存储类型不应成为这种例外。

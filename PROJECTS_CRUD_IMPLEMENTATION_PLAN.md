@@ -1,6 +1,11 @@
 # Projects CRUD 实现方案
 
-> 本文是 `:feature:projects`、`:domain:project` 与 `:data:project` 的实现契约。
+> 状态：已实施阶段的设计记录，用于追溯当时的范围和取舍；不是后续工作区迁移的模块
+> 规范。与当前代码或 `ARCHITECTURE.md`、各层专项规范、
+> `PROJECT_INITIALIZATION_IMPLEMENTATION_PLAN.md` 的最终初始化规则冲突时，以后者
+> 为准。例如本文早期关于 Draft 工作区目录的安排不能覆盖“Draft 无已发布工作区”的规则。
+
+> 本文记录 `:feature:projects`、`:domain:project` 与 `:data:project` 的阶段性实现契约。
 > 目标是在不破坏现有模块图的前提下，完成带**用户自定义项目图标**的 Project CRUD。
 > 图标选择使用 uCrop；最终持久化格式固定为 **512 × 512 PNG**。
 
