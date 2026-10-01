@@ -25,13 +25,6 @@
     <string name="projects_error_invalid_description">Enter a description up to 280 characters.</string>
     <string name="projects_error_name_exists">A project with this name already exists.</string>
     <string name="projects_error_not_found">This project no longer exists.</string>
-    <string name="projects_error_invalid_state">This project is in an invalid state.</string>
     <string name="projects_error_runtime_close">The running project could not be stopped. Try again.</string>
     <string name="projects_error_storage">Project storage is unavailable. Try again.</string>
-    <string name="projects_error_initialization">Project initialization could not be completed. Try again.</string>
-    <string name="projects_setup">Choose how to initialize this project.</string>
-    <string name="projects_retry_initialization">Initialization did not finish. Try Blank again.</string>
-    <string name="projects_initialize_blank">Blank project</string>
-    <string name="projects_initializing">Project initialization is in progress.</string>
-    <string name="projects_back">Back</string>
 </resources>

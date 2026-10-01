@@ -1,9 +1,7 @@
 package com.aeibi.avd.data.project.project
 
-import com.aeibi.avd.core.common.AppError
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
-import com.aeibi.avd.core.common.SnapshotId
 import com.aeibi.avd.core.model.Project
 import kotlinx.coroutines.flow.Flow
 
@@ -11,7 +9,7 @@ interface ProjectRepository {
     fun observeProjects(): Flow<OperationResult<List<Project>>>
     suspend fun refresh(): OperationResult<Unit>
     suspend fun getProject(projectId: ProjectId): Project?
-    suspend fun createDraft(
+    suspend fun createProject(
         name: String,
         description: String,
         icon: ProjectIconData?
@@ -24,19 +22,6 @@ interface ProjectRepository {
     ): OperationResult<Project>
     suspend fun loadIcon(projectId: ProjectId): OperationResult<ProjectIconData?>
     suspend fun delete(projectId: ProjectId): OperationResult<Unit>
-    suspend fun prepareInitialization(
-        projectId: ProjectId,
-        content: InitialWorkspaceContent
-    ): OperationResult<Unit>
-    suspend fun publishInitialization(
-        projectId: ProjectId,
-        initialRevisionId: SnapshotId
-    ): OperationResult<Project>
-    suspend fun resolveInitializationFailure(
-        projectId: ProjectId,
-        error: AppError
-    ): OperationResult<Unit>
-    suspend fun recoverInitialization(projectId: ProjectId): OperationResult<Project?>
 }
 
 class ProjectIconData private constructor(private val bytes: ByteArray) {

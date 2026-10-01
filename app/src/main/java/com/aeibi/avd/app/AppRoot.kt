@@ -8,8 +8,6 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.aeibi.avd.core.common.ProjectId
-import com.aeibi.avd.feature.projects.ProjectInitializationRoute
-import com.aeibi.avd.feature.projects.ProjectSetupRoute
 import com.aeibi.avd.feature.projects.ProjectsRoute
 import com.aeibi.avd.feature.settings.AppearanceSettingsRoute
 import com.aeibi.avd.feature.settings.LanguageSettingsRoute
@@ -32,34 +30,7 @@ fun AppRoot() {
             entry<AppDestination.List> {
                 ProjectsRoute(
                     onProjectSelected = { backStack.add(AppDestination.Workbench(it.value)) },
-                    onProjectSetupRequested = { projectId, retry ->
-                        backStack.add(AppDestination.Setup(projectId.value, retry))
-                    },
-                    onInitializationProgressRequested = {
-                        backStack.add(AppDestination.Initializing(it.value))
-                    },
                     onSettingsRequested = { backStack.add(AppDestination.Settings) }
-                )
-            }
-            entry<AppDestination.Setup> { destination ->
-                ProjectSetupRoute(
-                    projectId = ProjectId(destination.projectId),
-                    retry = destination.retry,
-                    onProjectReady = { projectId ->
-                        backStack.removeLastOrNull()
-                        backStack.add(AppDestination.Workbench(projectId.value))
-                    },
-                    onNavigateBack = { backStack.removeLastOrNull() }
-                )
-            }
-            entry<AppDestination.Initializing> { destination ->
-                ProjectInitializationRoute(
-                    projectId = ProjectId(destination.projectId),
-                    onProjectReady = { projectId ->
-                        backStack.removeLastOrNull()
-                        backStack.add(AppDestination.Workbench(projectId.value))
-                    },
-                    onNavigateBack = { backStack.removeLastOrNull() }
                 )
             }
             entry<AppDestination.Workbench> { destination ->
@@ -89,12 +60,6 @@ fun AppRoot() {
 private sealed interface AppDestination : NavKey {
     @Serializable
     data object List : AppDestination
-
-    @Serializable
-    data class Setup(val projectId: String, val retry: Boolean) : AppDestination
-
-    @Serializable
-    data class Initializing(val projectId: String) : AppDestination
 
     @Serializable
     data class Workbench(val projectId: String) : AppDestination

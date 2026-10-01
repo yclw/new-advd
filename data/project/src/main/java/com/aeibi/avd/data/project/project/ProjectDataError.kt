@@ -11,15 +11,6 @@ sealed class ProjectDataError(override val code: ErrorCode, override val retryab
         ErrorCode("project_storage_unavailable"),
         true
     )
-    data object InvalidState : ProjectDataError(ErrorCode("project_invalid_state"), false)
     data object InvalidIcon : ProjectDataError(ErrorCode("project_icon_invalid"), false)
     data object IconTooLarge : ProjectDataError(ErrorCode("project_icon_too_large"), false)
-    data object InitializationInvalid : ProjectDataError(
-        ErrorCode("project_initialization_invalid"),
-        false
-    )
-    data object InitializationRecoveryRequired : ProjectDataError(
-        ErrorCode("project_initialization_recovery_required"),
-        true
-    )
 }

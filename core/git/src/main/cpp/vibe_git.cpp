@@ -191,7 +191,9 @@ Java_com_aeibi_avd_core_git_GitNative_commitAll(
         throw_native(env, "OPERATION_FAILED");
         goto cleanup;
     }
-    if (git_index_add_all(index, &paths, GIT_INDEX_ADD_DEFAULT, nullptr, nullptr) != 0 ||
+    // Internal snapshots cover the whole workspace, regardless of .gitignore.
+    if (git_index_update_all(index, &paths, nullptr, nullptr) != 0 ||
+        git_index_add_all(index, &paths, GIT_INDEX_ADD_FORCE, nullptr, nullptr) != 0 ||
         git_index_write(index) != 0 ||
         git_index_write_tree(&tree_oid, index) != 0 ||
         git_tree_lookup(&tree, repository, &tree_oid) != 0) {
@@ -265,7 +267,8 @@ Java_com_aeibi_avd_core_git_GitNative_status(JNIEnv* env, jobject, jstring git_d
     jobject result = nullptr;
     if (!open_repository(env, git_directory, &repository)) goto cleanup;
     options.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
-    options.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED | GIT_STATUS_OPT_RECURSE_UNTRACKED_DIRS;
+    options.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED | GIT_STATUS_OPT_RECURSE_UNTRACKED_DIRS |
+        GIT_STATUS_OPT_INCLUDE_IGNORED | GIT_STATUS_OPT_RECURSE_IGNORED_DIRS;
     if (git_status_list_new(&statuses, repository, &options) != 0) {
         throw_native(env, "OPERATION_FAILED");
         goto cleanup;
@@ -371,7 +374,8 @@ Java_com_aeibi_avd_core_git_GitNative_restoreWorkTree(
     }
     {
         git_checkout_options options = GIT_CHECKOUT_OPTIONS_INIT;
-        options.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_RECREATE_MISSING;
+        options.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_RECREATE_MISSING |
+            GIT_CHECKOUT_REMOVE_UNTRACKED | GIT_CHECKOUT_REMOVE_IGNORED;
         if (git_checkout_tree(repository, reinterpret_cast<git_object*>(commit), &options) != 0) {
             throw_native(env, "OPERATION_FAILED");
         }

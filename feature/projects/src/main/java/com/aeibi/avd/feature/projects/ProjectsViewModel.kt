@@ -4,11 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.model.Project
-import com.aeibi.avd.core.model.ProjectStatus
 import com.aeibi.avd.core.ui.ContentState
 import com.aeibi.avd.core.ui.OperationState
 import com.aeibi.avd.core.ui.UiMessage
-import com.aeibi.avd.domain.project.CreateDraftProjectUseCase
+import com.aeibi.avd.domain.project.CreateProjectUseCase
 import com.aeibi.avd.domain.project.CreateProjectRequest
 import com.aeibi.avd.domain.project.DeleteProjectUseCase
 import com.aeibi.avd.domain.project.LoadProjectIconUseCase
@@ -35,7 +34,7 @@ import kotlinx.coroutines.launch
 class ProjectsViewModel @Inject constructor(
     observeProjects: ObserveProjectsUseCase,
     private val refreshProjects: RefreshProjectsUseCase,
-    private val createDraftProject: CreateDraftProjectUseCase,
+    private val createProject: CreateProjectUseCase,
     private val updateProjectProfile: UpdateProjectProfileUseCase,
     private val loadProjectIcon: LoadProjectIconUseCase,
     private val deleteProject: DeleteProjectUseCase
@@ -68,7 +67,7 @@ class ProjectsViewModel @Inject constructor(
     fun onAction(action: ProjectsAction) {
         when (action) {
             is ProjectsAction.CreateConfirmed -> perform {
-                createDraftProject(
+                createProject(
                     CreateProjectRequest(action.name, action.description, action.icon)
                 )
             }
@@ -107,20 +106,8 @@ class ProjectsViewModel @Inject constructor(
     private fun navigateToReadyProject(projectId: com.aeibi.avd.core.common.ProjectId) {
         val project = (uiState.value.content as? ContentState.Content)?.value
             ?.firstOrNull { it.id == projectId }
-        when (project?.status) {
-            ProjectStatus.DRAFT -> effectsChannel.trySend(
-                ProjectsEffect.NavigateToProjectSetup(projectId, retry = false)
-            )
-            ProjectStatus.FAILED -> effectsChannel.trySend(
-                ProjectsEffect.NavigateToProjectSetup(projectId, retry = true)
-            )
-            ProjectStatus.INITIALIZING -> effectsChannel.trySend(
-                ProjectsEffect.NavigateToInitializationProgress(projectId)
-            )
-            ProjectStatus.READY -> effectsChannel.trySend(
-                ProjectsEffect.NavigateToProject(projectId)
-            )
-            ProjectStatus.DELETING, null -> Unit
+        if (project != null) {
+            effectsChannel.trySend(ProjectsEffect.NavigateToProject(projectId))
         }
     }
 

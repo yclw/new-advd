@@ -16,16 +16,69 @@ import com.aeibi.avd.core.git.GitStatus
 import com.aeibi.avd.core.model.VersionCreator
 import com.aeibi.avd.core.model.VersionSnapshotType
 import com.aeibi.avd.data.project.ProjectMutationLease
-import com.aeibi.avd.data.project.project.InitializationJournalStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DefaultVersionRepositoryTest {
     private val projectId = ProjectId("project")
+
+    @Test
+    fun `first version publishes Git only after the commit succeeds`() = runBlocking {
+        val fileSystem = RecordingFileSystem()
+        val git = FakeGit()
+        val repository = repository(git, fileSystem)
+        git.onCommit = { location ->
+            assertEquals("/projects/project/workspace", location.workTreePath)
+            assertTrue(location.gitDirectoryPath.contains("/.staging/project/"))
+            assertFalse(fileSystem.paths.contains("projects/project/git"))
+        }
+
+        repository.createInitialRevision(projectId).successValue()
+
+        assertTrue(fileSystem.paths.contains("projects/project/git"))
+        assertEquals(
+            InitialVersionState(recorded = true, showPrompt = false),
+            repository.initialVersionState(projectId).successValue()
+        )
+    }
+
+    @Test
+    fun `postponing the first version persists without creating Git data`() = runBlocking {
+        val fileSystem = RecordingFileSystem()
+        val repository = repository(FakeGit(), fileSystem)
+
+        assertEquals(
+            InitialVersionState(recorded = false, showPrompt = true),
+            repository.initialVersionState(projectId).successValue()
+        )
+        repository.postponeInitialVersion(projectId).successValue()
+
+        assertEquals(
+            InitialVersionState(recorded = false, showPrompt = false),
+            repository.initialVersionState(projectId).successValue()
+        )
+        assertFalse(fileSystem.paths.contains("projects/project/git"))
+    }
+
+    @Test
+    fun `failed initial commit leaves no published Git and can be retried`() = runBlocking {
+        val fileSystem = RecordingFileSystem()
+        val git = FakeGit()
+        val repository = repository(git, fileSystem)
+        git.failCommit = true
+
+        assertTrue(repository.createInitialRevision(projectId) is OperationResult.Failure)
+        assertFalse(fileSystem.paths.contains("projects/project/git"))
+
+        git.failCommit = false
+        repository.createInitialRevision(projectId).successValue()
+        assertTrue(fileSystem.paths.contains("projects/project/git"))
+    }
 
     @Test
     fun `initial revision is a system snapshot with stable trailers`() = runBlocking {
@@ -99,12 +152,15 @@ class DefaultVersionRepositoryTest {
         )
     }
 
-    private fun repository(git: FakeGit): DefaultVersionRepository = DefaultVersionRepository(
+    private fun repository(
+        git: FakeGit,
+        fileSystem: ControlledFileSystem = NoOpFileSystem
+    ): DefaultVersionRepository = DefaultVersionRepository(
+        fileSystem = fileSystem,
         git = git,
         repositoryLocator = ProjectGitRepositoryLocator {
             GitRepositoryLocation("/projects/${it.value}/workspace", "/projects/${it.value}/git")
         },
-        initializationJournals = InitializationJournalStore(NoOpFileSystem),
         mutationLease = ProjectMutationLease()
     )
 
@@ -112,12 +168,15 @@ class DefaultVersionRepositoryTest {
         private val commits = mutableListOf<GitCommit>()
         val requests = mutableListOf<GitCommitRequest>()
         var restoredRevision: GitRevision? = null
-        private var initialized = false
+        var onCommit: ((GitRepositoryLocation) -> Unit)? = null
+        var failCommit = false
+        private val initializedRepositories = mutableSetOf<String>()
         private var dirty = hasChanges
 
         override suspend fun initialize(repository: GitRepositoryLocation): GitResult<Unit> {
-            if (initialized) return GitResult.Failure(GitError.REPOSITORY_ALREADY_EXISTS)
-            initialized = true
+            if (!initializedRepositories.add(repository.gitDirectoryPath)) {
+                return GitResult.Failure(GitError.REPOSITORY_ALREADY_EXISTS)
+            }
             return GitResult.Success(Unit)
         }
 
@@ -125,6 +184,8 @@ class DefaultVersionRepositoryTest {
             repository: GitRepositoryLocation,
             request: GitCommitRequest
         ): GitResult<GitRevision> {
+            onCommit?.invoke(repository)
+            if (failCommit) return GitResult.Failure(GitError.OPERATION_FAILED)
             requests += request
             val revision = checkNotNull(GitRevision.of("revision-${commits.size + 1}"))
             commits += GitCommit(
@@ -157,6 +218,30 @@ class DefaultVersionRepositoryTest {
             dirty = true
         }
     }
+
+    private class RecordingFileSystem : ControlledFileSystem by NoOpFileSystem {
+        val paths = mutableSetOf<String>()
+
+        override suspend fun exists(path: RelativePath): FileSystemResult<Boolean> =
+            FileSystemResult.Success(path.value == "projects/project/workspace" || path.value in paths)
+
+        override suspend fun writeTextAtomically(
+            path: RelativePath,
+            content: String
+        ): FileSystemResult<Unit> {
+            paths += path.value
+            return FileSystemResult.Success(Unit)
+        }
+
+        override suspend fun moveDirectoryAtomically(
+            source: RelativePath,
+            destination: RelativePath
+        ): FileSystemResult<Unit> {
+            assertTrue(source.value.contains("/.staging/"))
+            paths += destination.value
+            return FileSystemResult.Success(Unit)
+        }
+    }
 }
 
 private object NoOpFileSystem : ControlledFileSystem {
@@ -180,7 +265,8 @@ private object NoOpFileSystem : ControlledFileSystem {
     ): FileSystemResult<Unit> = success(Unit)
     override suspend fun deleteFile(path: RelativePath): FileSystemResult<Unit> = success(Unit)
     override suspend fun deleteDirectory(path: RelativePath): FileSystemResult<Unit> = success(Unit)
-    override suspend fun exists(path: RelativePath): FileSystemResult<Boolean> = success(false)
+    override suspend fun exists(path: RelativePath): FileSystemResult<Boolean> =
+        success(path.value == "projects/project/workspace")
 
     private fun <T> success(value: T): FileSystemResult<T> = FileSystemResult.Success(value)
 }

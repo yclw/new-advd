@@ -3,15 +3,12 @@ package com.aeibi.avd.domain.project
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.core.model.Project
-import com.aeibi.avd.data.project.project.InitialWorkspaceContent
 import com.aeibi.avd.data.project.project.ProjectDataError
 import com.aeibi.avd.data.project.project.ProjectIconData
 import com.aeibi.avd.data.project.project.ProjectIconDataChange
 import com.aeibi.avd.data.project.project.ProjectRepository
-import com.aeibi.avd.data.project.version.VersionRepository
 import java.text.Normalizer
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -25,7 +22,7 @@ class RefreshProjectsUseCase @Inject constructor(private val projectRepository: 
         projectRepository.refresh().mapProjectError()
 }
 
-class CreateDraftProjectUseCase @Inject constructor(
+class CreateProjectUseCase @Inject constructor(
     private val projectRepository: ProjectRepository
 ) {
     suspend operator fun invoke(request: CreateProjectRequest): OperationResult<Project> {
@@ -33,67 +30,12 @@ class CreateDraftProjectUseCase @Inject constructor(
             is ProfileValidation.Invalid -> return OperationResult.Failure(result.error)
             is ProfileValidation.Valid -> result.profile
         }
-        return projectRepository.createDraft(
+        return projectRepository.createProject(
             profile.name,
             profile.description,
             request.icon?.toData()
         ).mapProjectError()
     }
-}
-
-class InitializeBlankProjectUseCase @Inject constructor(
-    private val projectRepository: ProjectRepository,
-    private val versionRepository: VersionRepository
-) {
-    suspend operator fun invoke(projectId: ProjectId): OperationResult<Project> {
-        when (
-            val prepared = projectRepository.prepareInitialization(
-                projectId,
-                BlankWorkspaceDefinition.content
-            )
-        ) {
-            is OperationResult.Failure -> return prepared.mapProjectError()
-            is OperationResult.Success -> Unit
-        }
-        try {
-            val initialRevision = when (
-                val created = versionRepository.createInitialRevision(
-                    projectId
-                )
-            ) {
-                is OperationResult.Failure -> {
-                    projectRepository.resolveInitializationFailure(projectId, created.error)
-                    return OperationResult.Failure(ProjectDomainError.InitializationFailed)
-                }
-                is OperationResult.Success -> created.value
-            }
-            return when (
-                val published = projectRepository.publishInitialization(
-                    projectId,
-                    initialRevision.id
-                )
-            ) {
-                is OperationResult.Success -> published.mapProjectError()
-                is OperationResult.Failure -> {
-                    projectRepository.resolveInitializationFailure(projectId, published.error)
-                    OperationResult.Failure(ProjectDomainError.InitializationFailed)
-                }
-            }
-        } catch (error: CancellationException) {
-            throw error
-        }
-    }
-}
-
-class RecoverProjectInitializationUseCase @Inject constructor(
-    private val projectRepository: ProjectRepository
-) {
-    suspend operator fun invoke(projectId: ProjectId): OperationResult<Project?> =
-        projectRepository.recoverInitialization(projectId).mapProjectError()
-}
-
-private object BlankWorkspaceDefinition {
-    val content = InitialWorkspaceContent(emptyList())
 }
 
 data class CreateProjectRequest(
@@ -192,12 +134,8 @@ private fun <T> OperationResult<T>.mapProjectError(): OperationResult<T> = when 
             ProjectDataError.NameAlreadyExists -> ProjectDomainError.NameAlreadyExists
             ProjectDataError.ProjectNotFound -> ProjectDomainError.ProjectNotFound
             ProjectDataError.StorageUnavailable -> ProjectDomainError.StorageUnavailable
-            ProjectDataError.InvalidState -> ProjectDomainError.InvalidState
             ProjectDataError.InvalidIcon -> ProjectDomainError.InvalidIcon
             ProjectDataError.IconTooLarge -> ProjectDomainError.IconTooLarge
-            ProjectDataError.InitializationInvalid,
-            ProjectDataError.InitializationRecoveryRequired ->
-                ProjectDomainError.InitializationFailed
             else -> ProjectDomainError.StorageUnavailable
         }
     )

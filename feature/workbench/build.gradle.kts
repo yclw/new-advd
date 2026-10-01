@@ -1,5 +1,6 @@
 plugins {
     id("avd.android.compose.feature")
+    id("avd.hilt")
     id("avd.testing")
 }
 
@@ -12,6 +13,7 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:ui"))
     implementation(project(":domain:project"))
+    implementation(project(":domain:version"))
     implementation(project(":domain:agent"))
     implementation(project(":domain:preview"))
     implementation(libs.androidx.lifecycle.viewmodel.ktx)

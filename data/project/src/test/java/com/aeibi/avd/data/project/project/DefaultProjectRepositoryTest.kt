@@ -5,16 +5,7 @@ import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.core.filesystem.ControlledFileSystem
 import com.aeibi.avd.core.filesystem.FileSystemResult
 import com.aeibi.avd.core.filesystem.RelativePath
-import com.aeibi.avd.core.git.ControlledGit
-import com.aeibi.avd.core.git.GitCommit
-import com.aeibi.avd.core.git.GitCommitRequest
-import com.aeibi.avd.core.git.GitRepositoryLocation
-import com.aeibi.avd.core.git.GitResult
-import com.aeibi.avd.core.git.GitRevision
-import com.aeibi.avd.core.git.GitStatus
-import com.aeibi.avd.core.model.ProjectStatus
 import com.aeibi.avd.data.project.ProjectMutationLease
-import com.aeibi.avd.data.project.version.ProjectGitRepositoryLocator
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -25,16 +16,16 @@ import org.junit.Test
 
 class DefaultProjectRepositoryTest {
     @Test
-    fun `create persists a draft project without a workspace directory`() = runBlocking {
+    fun `create persists a ready project with a workspace directory`() = runBlocking {
         val fileSystem = FakeFileSystem()
         val repository = repository(fileSystem)
 
-        val project = repository.createDraft("Demo", "A demo", null).successValue()
+        val project = repository.createProject("Demo", "A demo", null).successValue()
 
-        assertEquals(ProjectStatus.DRAFT, project.status)
         assertEquals("A demo", project.description)
         assertTrue(fileSystem.texts.containsKey("projects/${project.id.value}/project.json"))
-        assertFalse(fileSystem.directories.contains("projects/${project.id.value}/workspace"))
+        assertTrue(fileSystem.directories.contains("projects/${project.id.value}/workspace"))
+        assertFalse(fileSystem.directories.contains("projects/${project.id.value}/git"))
         assertEquals(listOf(project), repository.observeProjects().first().successValue())
     }
 
@@ -43,7 +34,7 @@ class DefaultProjectRepositoryTest {
         val fileSystem = FakeFileSystem()
         val icon = ProjectIconData.fromPng(png512())
         val created = repository(fileSystem)
-            .createDraft(
+            .createProject(
                 name = "Demo",
                 description = "",
                 icon = icon
@@ -69,7 +60,7 @@ class DefaultProjectRepositoryTest {
     fun `update preserves historical icons when replacing or removing`() = runBlocking {
         val fileSystem = FakeFileSystem()
         val repository = repository(fileSystem)
-        val created = repository.createDraft(
+        val created = repository.createProject(
             name = "Before",
             description = "",
             icon = ProjectIconData.fromPng(png512())
@@ -99,9 +90,9 @@ class DefaultProjectRepositoryTest {
     @Test
     fun `duplicate names are case insensitive`() = runBlocking {
         val repository = repository(FakeFileSystem())
-        repository.createDraft("Demo", "", null)
+        repository.createProject("Demo", "", null)
 
-        val result = repository.createDraft("demo", "", null)
+        val result = repository.createProject("demo", "", null)
 
         assertEquals(ProjectDataError.NameAlreadyExists, (result as OperationResult.Failure).error)
     }
@@ -109,7 +100,7 @@ class DefaultProjectRepositoryTest {
     @Test
     fun `delete is idempotent`() = runBlocking {
         val repository = repository(FakeFileSystem())
-        val created = repository.createDraft("Demo", "", null).successValue()
+        val created = repository.createProject("Demo", "", null).successValue()
 
         assertTrue(repository.delete(created.id) is OperationResult.Success)
         assertTrue(repository.delete(ProjectId("already-gone")) is OperationResult.Success)
@@ -118,11 +109,6 @@ class DefaultProjectRepositoryTest {
 
     private fun repository(fileSystem: FakeFileSystem) = DefaultProjectRepository(
         fileSystem = fileSystem,
-        git = NoOpGit,
-        repositoryLocator = ProjectGitRepositoryLocator {
-            GitRepositoryLocation("/projects/${it.value}/workspace", "/projects/${it.value}/git")
-        },
-        initializationJournals = InitializationJournalStore(fileSystem),
         mutationLease = ProjectMutationLease()
     )
 
@@ -220,24 +206,6 @@ class DefaultProjectRepositoryTest {
             }
         }
     }
-}
-
-private object NoOpGit : ControlledGit {
-    override suspend fun initialize(repository: GitRepositoryLocation): GitResult<Unit> =
-        GitResult.Success(Unit)
-    override suspend fun commitAll(
-        repository: GitRepositoryLocation,
-        request: GitCommitRequest
-    ): GitResult<GitRevision> = error("Not used")
-    override suspend fun status(repository: GitRepositoryLocation): GitResult<GitStatus> =
-        error("Not used")
-    override suspend fun readHistory(
-        repository: GitRepositoryLocation
-    ): GitResult<List<GitCommit>> = error("Not used")
-    override suspend fun restoreWorkTree(
-        repository: GitRepositoryLocation,
-        revision: GitRevision
-    ): GitResult<Unit> = error("Not used")
 }
 
 private fun <T> OperationResult<T>.successValue(): T = (this as OperationResult.Success).value

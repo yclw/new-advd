@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.Flow
 interface VersionRepository {
     fun observeSnapshots(projectId: ProjectId): Flow<OperationResult<List<VersionSnapshot>>>
 
+    suspend fun initialVersionState(projectId: ProjectId): OperationResult<InitialVersionState>
+
+    suspend fun postponeInitialVersion(projectId: ProjectId): OperationResult<Unit>
+
     suspend fun createInitialRevision(projectId: ProjectId): OperationResult<VersionSnapshot>
 
     suspend fun createSnapshot(
@@ -25,3 +29,9 @@ interface VersionRepository {
         creator: VersionCreator
     ): OperationResult<VersionSnapshot>
 }
+
+data class InitialVersionState(
+    val recorded: Boolean,
+    val showPrompt: Boolean,
+    val hasUnrecordedChanges: Boolean = false
+)

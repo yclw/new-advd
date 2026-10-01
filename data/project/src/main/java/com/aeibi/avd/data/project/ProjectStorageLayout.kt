@@ -5,8 +5,6 @@ import com.aeibi.avd.core.filesystem.RelativePath
 
 internal object ProjectStorageLayout {
     val projectsDirectory = path("projects")
-    val stagingDirectory = path("projects/.staging")
-
     fun projectDirectory(projectId: ProjectId): RelativePath = path("projects/${projectId.value}")
 
     fun metadataPath(projectId: ProjectId): RelativePath =
@@ -18,25 +16,19 @@ internal object ProjectStorageLayout {
     fun stagingProjectDirectory(projectId: ProjectId): RelativePath =
         path("projects/.staging/${projectId.value}")
 
-    fun initializationJournalPath(projectId: ProjectId): RelativePath =
-        path("projects/${projectId.value}/initialization.json")
-
     fun workspaceDirectory(projectId: ProjectId): RelativePath =
         path("projects/${projectId.value}/workspace")
 
     fun stagingWorkspaceDirectory(projectId: ProjectId): RelativePath =
         path("projects/.staging/${projectId.value}/workspace")
 
-    fun stagingPayloadDirectory(projectId: ProjectId, operationId: String): RelativePath =
-        path("projects/.staging/${projectId.value}/$operationId")
-
-    fun stagingPayloadWorkspaceDirectory(projectId: ProjectId, operationId: String): RelativePath =
-        path("projects/.staging/${projectId.value}/$operationId/workspace")
-
     fun stagingPayloadGitDirectory(projectId: ProjectId, operationId: String): RelativePath =
         path("projects/.staging/${projectId.value}/$operationId/git")
 
     fun gitDirectory(projectId: ProjectId): RelativePath = path("projects/${projectId.value}/git")
+
+    fun initialVersionPromptDismissedPath(projectId: ProjectId): RelativePath =
+        path("projects/${projectId.value}/initial-version-prompt-dismissed")
 
     fun stagingAssetsDirectory(projectId: ProjectId): RelativePath =
         path("projects/.staging/${projectId.value}/assets")

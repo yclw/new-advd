@@ -3,6 +3,8 @@ package com.aeibi.avd.data.project.version
 import com.aeibi.avd.core.common.OperationResult
 import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.core.common.SnapshotId
+import com.aeibi.avd.core.filesystem.ControlledFileSystem
+import com.aeibi.avd.core.filesystem.FileSystemResult
 import com.aeibi.avd.core.git.ControlledGit
 import com.aeibi.avd.core.git.GitCommit
 import com.aeibi.avd.core.git.GitCommitRequest
@@ -16,9 +18,8 @@ import com.aeibi.avd.core.model.VersionCreator
 import com.aeibi.avd.core.model.VersionSnapshot
 import com.aeibi.avd.core.model.VersionSnapshotType
 import com.aeibi.avd.data.project.ProjectMutationLease
-import com.aeibi.avd.data.project.project.InitializationJournalStore
-import com.aeibi.avd.data.project.project.InitializationPhase
-import com.aeibi.avd.data.project.project.withPhase
+import com.aeibi.avd.data.project.ProjectStorageLayout
+import java.nio.file.Paths
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,9 +31,9 @@ import kotlinx.coroutines.flow.onStart
 
 @Singleton
 internal class DefaultVersionRepository @Inject constructor(
+    private val fileSystem: ControlledFileSystem,
     private val git: ControlledGit,
     private val repositoryLocator: ProjectGitRepositoryLocator,
-    private val initializationJournals: InitializationJournalStore,
     private val mutationLease: ProjectMutationLease
 ) : VersionRepository {
     private val changes = MutableSharedFlow<ProjectId>(extraBufferCapacity = 1)
@@ -44,17 +45,90 @@ internal class DefaultVersionRepository @Inject constructor(
         .onStart { emit(projectId) }
         .map { loadSnapshots(projectId) }
 
+    override suspend fun initialVersionState(projectId: ProjectId): OperationResult<InitialVersionState> =
+        mutationLease.withLease(projectId) {
+            workspaceUnavailable(projectId)?.let { return@withLease it }
+            val recorded = when (val exists = fileSystem.exists(ProjectStorageLayout.gitDirectory(projectId))) {
+                is FileSystemResult.Failure -> return@withLease failure(VersionDataError.OperationFailed)
+                is FileSystemResult.Success -> exists.value
+            }
+            if (recorded) {
+                when (val history = loadSnapshotsLocked(projectId)) {
+                    is OperationResult.Failure -> return@withLease history
+                    is OperationResult.Success -> Unit
+                }
+                return@withLease when (val status = git.status(repositoryLocator.locate(projectId))) {
+                    is GitResult.Failure -> failure(status.error.toVersionError())
+                    is GitResult.Success -> success(
+                        InitialVersionState(true, false, status.value.hasChanges)
+                    )
+                }
+            }
+            when (val dismissed = fileSystem.exists(
+                ProjectStorageLayout.initialVersionPromptDismissedPath(projectId)
+            )) {
+                is FileSystemResult.Failure -> failure(VersionDataError.OperationFailed)
+                is FileSystemResult.Success -> success(InitialVersionState(false, !dismissed.value))
+            }
+        }
+
+    override suspend fun postponeInitialVersion(projectId: ProjectId): OperationResult<Unit> =
+        mutationLease.withLease(projectId) {
+            workspaceUnavailable(projectId)?.let { return@withLease it }
+            when (fileSystem.writeTextAtomically(
+                ProjectStorageLayout.initialVersionPromptDismissedPath(projectId),
+                "dismissed"
+            )) {
+                is FileSystemResult.Failure -> failure(VersionDataError.OperationFailed)
+                is FileSystemResult.Success -> success(Unit)
+            }
+        }
+
     override suspend fun createInitialRevision(
         projectId: ProjectId
     ): OperationResult<VersionSnapshot> = mutate(projectId) {
+        workspaceUnavailable(projectId)?.let { return@mutate it }
         val repository = repositoryLocator.locate(projectId)
-        when (val initialized = git.initialize(repository)) {
-            is GitResult.Success -> createInitialCommit(projectId, repository)
-            is GitResult.Failure -> when (initialized.error) {
-                GitError.REPOSITORY_ALREADY_EXISTS -> existingInitialRevision(projectId, repository)
-                else -> failure(initialized.error.toVersionError())
+        when (val exists = fileSystem.exists(ProjectStorageLayout.gitDirectory(projectId))) {
+            is FileSystemResult.Failure -> return@mutate failure(VersionDataError.OperationFailed)
+            is FileSystemResult.Success -> if (exists.value) {
+                return@mutate existingInitialRevision(projectId, repository)
             }
         }
+        if (fileSystem.deleteDirectory(
+                ProjectStorageLayout.stagingProjectDirectory(projectId)
+            ) is FileSystemResult.Failure
+        ) {
+            return@mutate failure(VersionDataError.OperationFailed)
+        }
+        val operationId = UUID.randomUUID().toString()
+        val stagingGit = ProjectStorageLayout.stagingPayloadGitDirectory(projectId, operationId)
+        val stagingProject = ProjectStorageLayout.stagingProjectDirectory(projectId)
+        val gitPath = Paths.get(repository.gitDirectoryPath)
+        val stagedRepository = repository.copy(
+            gitDirectoryPath = gitPath.parent.parent.resolve(".staging")
+                .resolve(projectId.value).resolve(operationId).resolve("git").toString()
+        )
+        val created = when (val initialized = git.initialize(stagedRepository)) {
+            is GitResult.Failure -> failure(initialized.error.toVersionError())
+            is GitResult.Success -> createCommit(
+                projectId, stagedRepository, VersionCreator.SYSTEM,
+                VersionSnapshotType.INITIALIZATION, null
+            )
+        }
+        if (created is OperationResult.Failure) {
+            fileSystem.deleteDirectory(stagingProject)
+            return@mutate created
+        }
+        if (fileSystem.moveDirectoryAtomically(
+                stagingGit, ProjectStorageLayout.gitDirectory(projectId)
+            ) is FileSystemResult.Failure
+        ) {
+            fileSystem.deleteDirectory(stagingProject)
+            return@mutate failure(VersionDataError.OperationFailed)
+        }
+        fileSystem.deleteDirectory(stagingProject)
+        created
     }
 
     override suspend fun createSnapshot(
@@ -115,61 +189,29 @@ internal class DefaultVersionRepository @Inject constructor(
         }
     }
 
+    private suspend fun workspaceUnavailable(projectId: ProjectId): OperationResult.Failure? =
+        when (val exists = fileSystem.exists(ProjectStorageLayout.workspaceDirectory(projectId))) {
+            is FileSystemResult.Failure -> OperationResult.Failure(VersionDataError.OperationFailed)
+            is FileSystemResult.Success -> if (exists.value) null else
+                OperationResult.Failure(VersionDataError.RepositoryUnavailable)
+        }
+
     private suspend fun existingInitialRevision(
         projectId: ProjectId,
         repository: GitRepositoryLocation
     ): OperationResult<VersionSnapshot> = when (val history = git.readHistory(repository)) {
         is GitResult.Failure -> failure(history.error.toVersionError())
         is GitResult.Success -> if (history.value.isEmpty()) {
-            createInitialCommit(projectId, repository)
+            failure(VersionDataError.HistoryCorrupted)
         } else {
             when (val snapshots = snapshots(projectId, history.value)) {
                 is OperationResult.Failure -> snapshots
                 is OperationResult.Success -> snapshots.value.singleOrNull {
                     it.type == VersionSnapshotType.INITIALIZATION &&
                         it.creator == VersionCreator.SYSTEM
-                }?.let { snapshot -> recordInitialRevision(projectId, snapshot) }
+                }?.let(::success)
                     ?: failure(VersionDataError.HistoryCorrupted)
             }
-        }
-    }
-
-    private suspend fun createInitialCommit(
-        projectId: ProjectId,
-        repository: GitRepositoryLocation
-    ): OperationResult<VersionSnapshot> = when (
-        val created = createCommit(
-            projectId = projectId,
-            repository = repository,
-            creator = VersionCreator.SYSTEM,
-            type = VersionSnapshotType.INITIALIZATION,
-            restoredFromSnapshotId = null
-        )
-    ) {
-        is OperationResult.Failure -> created
-        is OperationResult.Success -> recordInitialRevision(projectId, created.value)
-    }
-
-    private suspend fun recordInitialRevision(
-        projectId: ProjectId,
-        snapshot: VersionSnapshot
-    ): OperationResult<VersionSnapshot> {
-        val journal = initializationJournals.read(projectId) ?: return success(snapshot)
-        if (journal.durablePhase() !in setOf(
-                InitializationPhase.STAGED,
-                InitializationPhase.INITIAL_REVISION_CREATED
-            )
-        ) {
-            return failure(VersionDataError.InitializationStateInvalid)
-        }
-        return if (initializationJournals.write(
-                projectId,
-                journal.withPhase(InitializationPhase.INITIAL_REVISION_CREATED, snapshot.id)
-            )
-        ) {
-            success(snapshot)
-        } else {
-            failure(VersionDataError.OperationFailed)
         }
     }
 

@@ -1,0 +1,12 @@
+<resources>
+    <string name="workbench_project">Project: %1$s</string>
+    <string name="workbench_back">Back to projects</string>
+    <string name="workbench_version_recorded">The first version has been recorded.</string>
+    <string name="workbench_unrecorded_changes">The first version is recorded. New edits are not yet recorded.</string>
+    <string name="workbench_version_off">Version history has not started.</string>
+    <string name="workbench_record_first_version">Record first version</string>
+    <string name="workbench_version_prompt_title">Record the first version?</string>
+    <string name="workbench_version_prompt_message">Save the current workspace as the first version. You can keep editing while it is recorded.</string>
+    <string name="workbench_later">Later</string>
+    <string name="workbench_version_error">Could not update version history. Try again.</string>
+</resources>

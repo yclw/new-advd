@@ -38,7 +38,9 @@ internal fun ProjectList(
                 modifier = Modifier.clickable(enabled = enabled) { onSelect(project) },
                 leadingContent = { ProjectIcon(project) },
                 headlineContent = { Text(project.name) },
-                supportingContent = { Text(project.description.ifBlank { project.status.name }) },
+                supportingContent = project.description.takeIf { it.isNotBlank() }?.let {
+                    { Text(it) }
+                },
                 trailingContent = {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         TextButton(enabled = enabled, onClick = { onUpdate(project) }) {

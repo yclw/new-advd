@@ -8,14 +8,5 @@ data class Project(
     val description: String,
     val hasCustomIcon: Boolean,
     val createdAtEpochMillis: Long,
-    val updatedAtEpochMillis: Long,
-    val status: ProjectStatus
+    val updatedAtEpochMillis: Long
 )
-
-enum class ProjectStatus {
-    DRAFT,
-    INITIALIZING,
-    READY,
-    FAILED,
-    DELETING
-}

@@ -4,11 +4,13 @@ package com.aeibi.avd.core.git
 interface ControlledGit {
     suspend fun initialize(repository: GitRepositoryLocation): GitResult<Unit>
 
+    /** Commits the entire worktree, including files matched by .gitignore and tracked deletions. */
     suspend fun commitAll(
         repository: GitRepositoryLocation,
         request: GitCommitRequest
     ): GitResult<GitRevision>
 
+    /** Reports changes throughout the worktree, including ignored files. */
     suspend fun status(repository: GitRepositoryLocation): GitResult<GitStatus>
 
     suspend fun readHistory(repository: GitRepositoryLocation): GitResult<List<GitCommit>>

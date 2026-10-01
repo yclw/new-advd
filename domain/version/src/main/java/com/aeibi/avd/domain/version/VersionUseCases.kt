@@ -10,6 +10,42 @@ import com.aeibi.avd.data.project.version.VersionRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 
+class GetInitialVersionStateUseCase @Inject constructor(
+    private val versionRepository: VersionRepository
+) {
+    suspend operator fun invoke(projectId: ProjectId): OperationResult<InitialVersionAvailability> =
+        when (val result = versionRepository.initialVersionState(projectId)) {
+            is OperationResult.Failure -> result
+            is OperationResult.Success -> OperationResult.Success(
+                InitialVersionAvailability(
+                    result.value.recorded,
+                    result.value.showPrompt,
+                    result.value.hasUnrecordedChanges
+                )
+            )
+        }
+}
+
+data class InitialVersionAvailability(
+    val recorded: Boolean,
+    val showPrompt: Boolean,
+    val hasUnrecordedChanges: Boolean
+)
+
+class PostponeInitialVersionUseCase @Inject constructor(
+    private val versionRepository: VersionRepository
+) {
+    suspend operator fun invoke(projectId: ProjectId): OperationResult<Unit> =
+        versionRepository.postponeInitialVersion(projectId)
+}
+
+class RecordInitialVersionUseCase @Inject constructor(
+    private val versionRepository: VersionRepository
+) {
+    suspend operator fun invoke(projectId: ProjectId): OperationResult<VersionSnapshot> =
+        versionRepository.createInitialRevision(projectId)
+}
+
 class ObserveSnapshotsUseCase @Inject constructor(
     private val versionRepository: VersionRepository
 ) {

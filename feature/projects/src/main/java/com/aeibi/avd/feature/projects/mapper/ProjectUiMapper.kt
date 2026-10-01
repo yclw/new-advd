@@ -11,7 +11,6 @@ internal fun Project.toProjectItem(icon: ProjectIconContent?): ProjectItem = Pro
     id = id,
     name = name,
     description = description,
-    status = status,
     icon = icon?.let { ProjectIconPreview.fromPng(it.copyPngBytes()) }
 )
 

@@ -8,7 +8,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import com.aeibi.avd.core.common.ProjectId
-import com.aeibi.avd.core.model.ProjectStatus
 import com.aeibi.avd.core.ui.ContentState
 import com.aeibi.avd.domain.project.ProjectIconChange
 import org.junit.Assert.assertEquals
@@ -100,7 +99,6 @@ class ProjectsScreenTest {
         id = ProjectId("project-1"),
         name = "Original project",
         description = "Original description",
-        status = ProjectStatus.DRAFT,
         icon = null
     )
 }

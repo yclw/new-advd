@@ -7,6 +7,10 @@ plugins {
 android {
     namespace = "com.aeibi.avd.core.git"
 
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
@@ -16,4 +20,6 @@ android {
 
 dependencies {
     implementation(project(":core:filesystem"))
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }
