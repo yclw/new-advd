@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,12 +42,14 @@ fun ProjectSetupRoute(
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
     LaunchedEffect(viewModel) { viewModel.readyProjects.collect { onProjectReady(it) } }
-    ProjectSetupScreen(
-        retry = retry,
-        uiState = uiState,
-        onInitializeBlank = { viewModel.initializeBlank(projectId) },
-        onNavigateBack = onNavigateBack
-    )
+    Surface(modifier = Modifier.fillMaxSize()) {
+        ProjectSetupScreen(
+            retry = retry,
+            uiState = uiState,
+            onInitializeBlank = { viewModel.initializeBlank(projectId) },
+            onNavigateBack = onNavigateBack
+        )
+    }
 }
 
 @Composable
@@ -58,13 +61,15 @@ fun ProjectInitializationRoute(
 ) {
     LaunchedEffect(projectId) { viewModel.recover(projectId) }
     LaunchedEffect(viewModel) { viewModel.readyProjects.collect { onProjectReady(it) } }
-    when (val uiState = viewModel.uiState.collectAsStateWithLifecycle().value) {
-        ProjectInitializationUiState.Loading -> InitializationLoadingScreen(onNavigateBack)
-        is ProjectInitializationUiState.RecoveryRequired -> RecoveryRequiredScreen(
-            error = uiState.error,
-            onRetry = { viewModel.recover(projectId) },
-            onNavigateBack = onNavigateBack
-        )
+    Surface(modifier = Modifier.fillMaxSize()) {
+        when (val uiState = viewModel.uiState.collectAsStateWithLifecycle().value) {
+            ProjectInitializationUiState.Loading -> InitializationLoadingScreen(onNavigateBack)
+            is ProjectInitializationUiState.RecoveryRequired -> RecoveryRequiredScreen(
+                error = uiState.error,
+                onRetry = { viewModel.recover(projectId) },
+                onNavigateBack = onNavigateBack
+            )
+        }
     }
 }
 
