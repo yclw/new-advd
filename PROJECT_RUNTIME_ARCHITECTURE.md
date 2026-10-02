@@ -44,9 +44,12 @@ Android application process
       └─ PreviewRuntimeCoordinator                    [:domain:preview]
           └─ PreviewRuntime(projectId)                 [internal]
 
-:feature:workbench                  [项目内容器]
+:app                                [连接工作区内容插槽与项目级 destination]
+  ├─ :feature:workbench            [项目内容器]
   ├─ :feature:chat                 [观察 Agent／Session]
-  └─ :feature:preview              [观察 Preview／Console]
+  ├─ :feature:preview              [观察 Preview／Console]
+  ├─ :feature:versions             [项目版本页面]
+  └─ :feature:build                [项目构建页面]
 
 :domain:project
   └─ CloseProjectRuntimeUseCase / RecoverProjectUseCase
@@ -72,8 +75,10 @@ entry 或 ViewModel 销毁变成资源关闭条件。因此它们各自拥有独
 :feature:preview   -> :domain:preview -> :data:project
 ```
 
-Chat／Preview 子模块和上述容器依赖仍是目标状态，尚未在当前工程中创建或放行；
-实际模块图和迁移门槛见工作区 UI 文档。
+Chat／Preview 子模块尚未在当前工程中创建；第一阶段只创建 Feature 层占位，
+上图的 domain/runtime 连线留待真实功能接入。各 Feature 不相互依赖；`:app`
+负责组合内嵌内容与项目级页面。当前实施范围见
+[工作区界面占位方案](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md)。
 
 `:domain:project` 继续负责项目的创建、删除、导入导出和持久工作区恢复；快照工作流属于
 `:domain:version`。“关闭项目

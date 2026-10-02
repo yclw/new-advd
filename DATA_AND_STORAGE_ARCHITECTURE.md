@@ -52,8 +52,9 @@
 上图中未标“按需接入”的箭头表示已声明的模块依赖，不保证对应资源能力已经实现。
 当前 `:data:project` 有 Room 项目元数据、图标和初始版本实现，但 `WorkspaceRepository` 仍只有契约；
 `:data:session` 只有 `SessionRepository` 契约，消息与 turn journal 尚无实现；
-Preview 日志只有仓库接口。工作区 Chat／Preview 接入前，应先补齐所需实现与测试，
-不能把下面的资源所有权表误读为完成清单。
+Preview 日志已有有界内存仓库实现，但缺少对 UI 的 domain 观察入口。当前工作区只做
+Feature 层占位；真实 Chat／Preview 业务接入前再补齐所需实现与测试，不能把下面的
+资源所有权表误读为完成清单。
 
 ## 3. `:data:<area>` 的职责
 
@@ -213,9 +214,11 @@ shell。只有某项技术能力确实要建立在另一项更基础的 core 技
 | `:core:<technology>` | 默认无；有明确技术分层时可依赖更低层 `:core:*` | data、domain、feature、contract、agent、app、shell |
 | `:data:<area>` | `:core:*`、经批准的 `:contract:*` | 其他 data、domain、feature、agent runtime、app、shell |
 | `:domain:<area>` | `:data:*`、`core:common/model`、必要 contract | feature、app、storage SDK 类型 |
-| `:feature:<area>` | domain 与 UI 相关 core；未来工作区容器还有受限子功能 Route 依赖 | data、技术 core 存储模块、contract、runtime；子功能之间互相依赖 |
+| `:feature:<area>` | domain、UI 相关 core、极小 feature API | data、技术 core 存储模块、contract、runtime、其他 Feature 的实现 |
 
-工作区容器例外尚未被当前模块图校验器允许；具体范围与迁移门槛见
+`:app` 负责将工作区容器插槽与 Chat／Preview Route 连接；当前只连接 Feature 层占位，
+不为工作区占位页面接入 domain/data。Feature 之间没有实现依赖。
+具体范围与迁移门槛见
 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
 默认使用 Gradle `implementation`。只有公开 API 的签名确实包含某个依赖的刻意类型时才使用

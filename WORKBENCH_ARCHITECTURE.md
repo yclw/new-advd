@@ -1,10 +1,14 @@
 # 项目工作区 UI 架构
 
-> 本文描述工作区的目标模块边界与迁移顺序。当前工程只有占位的
-> `:feature:workbench`；下述 `:feature:chat` 和 `:feature:preview` 尚未创建。
-> 创建它们之前，必须在同一变更中更新 `settings.gradle.kts`、模块图校验器及测试。
+> 本文描述工作区的目标模块边界与迁移顺序。当前 `:feature:workbench`
+> 仍是临时页面，包含初始版本提示；下述 `:feature:chat` 和 `:feature:preview` 尚未创建，
+> 已有的 `:feature:versions`、`:feature:build` 尚未提供工作区可导航的 Route。
+> 创建它们时须加入 `settings.gradle.kts`；现有模块图校验器已经禁止 Feature 实现
+> 之间的依赖，应保持这条规则，并以反例测试覆盖新增模块。
 > 通用 Feature 规则见 [FEATURE_ARCHITECTURE.md](FEATURE_ARCHITECTURE.md)，运行资源的
 > 生命周期见 [PROJECT_RUNTIME_ARCHITECTURE.md](PROJECT_RUNTIME_ARCHITECTURE.md)。
+> 当前先实施[工作区界面占位方案](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md)：
+> AI 与非 AI 功能都只完成 Feature 层占位和导航，不向 domain/data 接线。
 
 ## 1. 拆分依据
 
@@ -13,84 +17,82 @@
 
 | 模块 | UI 所有权 | 不拥有 |
 | --- | --- | --- |
-| `:feature:workbench` | 工作区容器、项目标题、Pane 选择、当前会话 ID、跨功能入口、显式关闭项目的确认 UI | 聊天记录、Agent turn、Preview server、WebView、控制台日志 |
-| `:feature:chat`（计划） | 聊天时间线、输入与草稿、Agent 状态展示、会话抽屉及会话操作 | Agent Job、会话持久化、项目文件 |
+| `:feature:workbench` | 工作区容器、项目标题、内嵌区域选择、项目内功能入口、显式关闭项目的确认 UI | 聊天记录、版本／构建流程、Agent turn、Preview server、WebView、控制台日志 |
+| `:feature:chat`（计划） | 当前仅提供 Chat／AI 占位；未来界面范围待 Chat／Session／Agent 方案确定 | 当前阶段不创建会话或 Agent 状态 |
 | `:feature:preview`（计划） | 预览控制、WebView bridge、预览状态、预览控制台与日志选择 | Preview backend handle、项目文件、日志存储 |
-| `:feature:versions` | 版本历史、对比与恢复确认 | Git 与文件恢复 |
-| `:feature:build` | 构建入口、进度与结果展示 | 构建执行和产物存储 |
+| `:feature:versions` | 版本历史、初始版本提示与记录、对比与恢复确认 | Git 与文件恢复 |
+| `:feature:build` | 构建配置、进度与结果展示 | 构建执行和产物存储 |
 
 文件浏览与编辑形成实际用户流程时，再建立 `:feature:files`；其文件读写必须经 domain
-use case。会话抽屉先属于 Chat，控制台先属于 Preview。只有出现不同的 owner、导航生命周期
-或独立业务流程时，再评估是否拆出会话或日志 Feature。
+use case。控制台先属于 Preview。会话相关 UI 的归属留待 AI 阶段设计。
 
 ## 2. 依赖与组合
 
 ```text
 :app
-  -> :feature:workbench                 // 安装项目内入口
-       -> :feature:chat                 // 仅调用公开 ChatRoute
-       -> :feature:preview              // 仅调用公开 PreviewRoute
-       -> :domain:project               // 项目标题与显式关闭
+  ├─> :feature:workbench                // 容器、内容插槽及项目内入口
+  ├─> :feature:chat                     // 本阶段只提供占位 Route
+  ├─> :feature:preview                  // 本阶段只提供占位 Route
+  ├─> :feature:versions                 // 独立的项目版本 destination
+  └─> :feature:build                    // 独立的项目构建 destination
 
-:feature:chat    -> :domain:agent / :domain:project
-:feature:preview -> :domain:preview
+// 以上是当前占位阶段的新增依赖；功能接入后才决定各 Feature 的 domain 依赖。
 ```
 
-`workbench -> chat/preview` 是**唯一计划中的 Feature 实现依赖例外**。方向固定为容器到
-子功能；子功能不得依赖容器或彼此，也不得通过 `api` 重新导出另一个 Feature。子功能只公开
-供容器组合的 Route 与最小输入/回调，其 Screen、ViewModel、UiState、组件及 bridge 默认
-`internal`。跨 Feature 的顶层导航仍由 `:app` 负责，不能把 AppRoot 的导航图复制进容器。
+`:app` 在 Workbench destination 中调用 `WorkbenchRoute`。容器提供一个项目内容插槽，
+用明确的 `WorkbenchSection` 和稳定 UI 参数告诉 `:app`
+该显示哪个 Route。容器决定项目标题、区域切换、返回和显式关闭；它不 import
+其他 Feature。一个内容插槽避免每新增项目内功能就给容器增加一个 Compose 参数；
+`WorkbenchSection` 只列真实的内嵌区域，不成为动态 Feature 注册表。
+当前区域为静态 Overview、Chat／AI 占位和 Preview／Console 占位；正式业务状态与
+会话选择在各自方案确定后再接入。
 
-当前 `verifyModuleGraph` 只允许 Feature 依赖 core、domain 或 `:feature:*:api`。
-因此这张目标依赖图**尚不能通过当前校验**。建立第一个子功能模块时，须将例外精确限制为
-`:feature:workbench -> :feature:chat/:feature:preview`，并为允许的方向、反向依赖和同级
-依赖添加校验测试；在校验器更新前不得用绕过检查或把逻辑塞回容器的方式迁移。
-容器当前对 `:domain:agent`、`:domain:preview` 的直接依赖只是占位阶段的配置；
-拆分后若无容器级用例，应移除这些依赖。
+Version 与 Build 当前适合独立的项目级页面：Workbench 通过
+`onVersionsRequested(projectId)`／`onBuildRequested(projectId)` 表达导航意图，
+`:app` 将 `ProjectId` 入栈并安装对应 Feature Route。返回时回到同一个 Workbench
+destination，保留其区域选择。它们的页面、状态、用例调用和业务错误都留在
+各自 Feature。将来确需常驻工作区内嵌面板时，再给 `WorkbenchSection` 增加一项，
+由 `:app` 映射至该 Feature Route；无需增加 Feature 间依赖或第二套组合协议。
+
+`:app` 只连接 Route、稳定参数和回调，不观察业务 Flow、注入 use case、维护业务
+状态，也不实现工作区布局。子功能仅公开组合或导航所需的 Route 和最小输入／回调，
+其 Screen、ViewModel、UiState、组件及 bridge 默认 `internal`。
+
+各 Feature 之间均无 Gradle 实现依赖。现有 `verifyModuleGraph` 允许 `:app` 依赖
+Feature，并禁止 Feature 依赖另一个 Feature 的实现；新增模块后应保留这条规则，
+为 `workbench -> chat`、`workbench -> versions`、`chat -> preview` 等错误方向补
+反例测试。无需增加容器特例。
+容器当前对 `:domain:agent`、`:domain:preview` 的直接依赖未被页面使用；占位阶段移除。
+当前 Workbench 的初始版本提示直接调用 `:domain:version`；替换临时页面时移除该
+提示与用例调用，不在 Versions 占位页继续执行。真实版本 UI 留待后续接入。
 
 ## 3. 状态与跨功能交互
 
-`:feature:workbench` 只保存 `ProjectId`、选中的 `SessionId?`、当前 Pane 及容器级瞬态
-UI 状态。Chat 和 Preview 各自从 domain use case 观察自己的业务状态；不建立汇总所有
-消息、日志、预览和运行状态的 `WorkbenchViewModel`，也不在多个 ViewModel 中复制同一
-业务真相。
+占位阶段，`:feature:workbench` 只保存 `ProjectId`、当前区域和容器级瞬态 UI
+状态。当前不读取项目资料，不观察 Preview 或其他业务状态；标题使用中性文案。
 
-容器组合接口只暴露稳定输入与语义回调。例如 Chat Route 接收 `projectId`、
-`selectedSessionId`，通过 `onSessionSelected(SessionId?)` 把抽屉选择交还容器；Preview
-Route 接收 `projectId`，通过 `onAddLogExcerptToChat` 提交有长度上限的日志摘录。
-容器切到 Chat Pane 并保存待交付的草稿请求，直到 Chat 确认接收。不能依赖隐藏 Pane
-仍在组合树中，也不能直接调用其 ViewModel。日志原件和运行中状态仍由各自的资源 owner
-保存；这份待交付草稿只是 UI 输入。
+内容插槽只使用 `WorkbenchSection`、稳定 ID、简单 UI 值和语义回调。`:app`
+将 Chat／AI、Preview／Console 区域映射到各自的占位 Route；静态 Overview 由
+Workbench 渲染。Version／Build 经 `:app` 导航到独立占位页面。Feature 之间不直接取得对方的
+ViewModel，也不建立全局 UI 事件总线。
 
-- 选中会话或 Pane 只改变 UI 选择，不取消 Agent turn，不停止 Preview。
-- 新会话可以由 `selectedSessionId == null` 表示；发送消息时由 domain 保证创建会话、
-  持久化消息与发起 turn 的顺序。不能只在 UI 生成一个尚未持久化的 ID。
-- Chat 通过 `:domain:agent` 发起／取消 turn，通过经 domain 暴露的会话观察用例读取
-  时间线；ViewModel 不能拥有运行中的 Agent Job。
-- Preview 通过 `:domain:preview` 观察与控制 runtime。WebView 仅是 UI client；
-  可见时根据 endpoint 和 content revision 加载或刷新。
-- “将日志加入聊天草稿”等跨功能操作由容器接收子功能的类型化回调，再传给目标子功能。
-  不直接取得另一个 Feature 的 ViewModel，也不建立全局 UI 事件总线。若请求必须跨进程
-  恢复，应将其持久化在对应业务 owner，而不是只保存在回调中。
-- 返回项目列表只改变导航。明确的“关闭项目运行资源”才调用
-  `RequestProjectRuntimeCloseUseCase` / `ConfirmProjectRuntimeCloseUseCase`。
+- 切换区域只改变 UI 选择；当前没有 Preview、Agent 或 Build runtime 连接。
+- 返回项目列表只改变导航；占位界面不提供“关闭项目运行资源”动作。
+- 打开 Version／Build 只发导航请求；返回时凭同一 `ProjectId` 和已保存的区域选择继续。
 
 导航参数仅包含稳定 ID；Composable slot 或回调是进程内组合接口，不得序列化为导航参数。
-页面旋转与进程恢复时，容器重建 UI 选择，子功能通过 ID 重新观察 domain/data 状态。
+页面旋转与进程恢复时，容器重建区域选择；当前子功能没有待观察的业务状态。
+Session 选择归属、Agent 生命周期、聊天草稿交接和日志转聊天的语义仍待 AI 阶段设计；
+当前不引入 `SessionId` 或对应的占位业务状态。
 
 ## 4. 迁移顺序与验收
 
-1. 修订模块图校验规则并建立两个子功能模块的空 Route。验证正向依赖通过、反向和同级
-   Feature 依赖失败。
-2. 将占位 `WorkbenchRoute` 改为真实容器；项目详情须经 `:domain:project` 读取，
-   并处理项目不存在或不是 `READY` 的状态。验证返回列表不关闭 runtime。
-3. 先完成会话及消息的 data/domain 契约，再接入 Chat 的列表、空态、发送、失败、重试和
-   取消。真实 Agent runtime 尚未迁入时，不把占位运行结果显示为成功回复。
-4. 为 Preview 接入受控工作区后端、内容修订号与日志契约，再迁移 WebView／Console UI。
-   后端未配置时显示明确不可用状态，不由 ViewModel 启动旧 server。
-5. 接入显式关闭、跨功能草稿和版本／构建入口。每一阶段运行
-   `verifyModuleGraph`、`verifyArchitectureSources` 与对应模块测试。
+1. 将临时 `WorkbenchRoute` 改为可恢复区域选择的纯 UI 容器，移除初始版本弹窗、
+   状态和 use case 调用。Overview 用中性文案，不读取项目资料。
+2. 在 `:feature:chat`、`:feature:preview` 中建立内嵌占位 Route；在已有
+   `:feature:versions`、`:feature:build` 中建立项目级占位 Route，由 `:app` 组合。
+3. 验证导航、返回、状态恢复、文案及 Feature 间零实现依赖；运行
+   `verifyModuleGraph`、`verifyArchitectureSources` 与适用 UI 测试。
 
-最低 UI 验证包括：空白与不存在的项目、会话切换时运行中的 turn、Chat ViewModel 重建、
-Preview 隐藏后重开、日志转草稿、返回与显式关闭的不同效果，以及窄屏和大字体下的
-Pane 切换。运行时与持久恢复的验证矩阵见 Project Runtime 文档。
+真实项目资料、Version、Preview、Build、Chat／Session／Agent 的功能接入均另行设计。
+本阶段的交付与验证矩阵见[工作区界面占位方案](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md)。

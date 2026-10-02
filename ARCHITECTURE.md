@@ -38,11 +38,14 @@ Composable -> ViewModel -> domain use case -> data resource -> core technology
 ```mermaid
 graph TD
     app[":app"] --> feature[":feature:*"]
+    app --> workbench[":feature:workbench 工作区容器"]
+    app --> chat[":feature:chat 计划中"]
+    app --> previewUi[":feature:preview 计划中"]
+    app --> versionsUi[":feature:versions 项目级页面"]
+    app --> buildUi[":feature:build 项目级页面"]
 
     feature --> domain[":domain:*"]
     feature --> featureApi[":feature:*:api"]
-    workbench[":feature:workbench 目标容器"] --> chat[":feature:chat 计划中"]
-    workbench --> previewUi[":feature:preview 计划中"]
     feature --> uiCore[":core:ui / :core:designsystem / :core:navigation"]
 
     domain --> data[":data:*"]
@@ -62,17 +65,20 @@ graph TD
 1. `:core:*` 不依赖 data、domain、feature、agent、app 或 shell 模块。
 2. `:data:*` 只能依赖 core 和获准的 contract；不得依赖 feature、domain、app 或 Agent runtime 实现。
 3. `:domain:*` 可以依赖 data 资源契约、`:core:common`、`:core:model`、`:core:logging` 和必要的 `:contract:*`；不得依赖其他 domain、feature、app 或 runtime 实现模块。
-4. 现行 `:feature:*` 可依赖 domain、core 与极小的 `:feature:*:api`；不得依赖 data、
-   contract 或 runtime 实现。目标工作区容器例外见下一条。
-5. 现行校验禁止 Feature 依赖另一个 Feature 的实现。目标工作区设计增加唯一的
-   `:feature:workbench -> :feature:chat/:feature:preview` 容器依赖例外；创建子模块时必须
-   同步修改 `verifyModuleGraph` 及反例测试。在此之前该例外还不是可构建的依赖规则。
+4. `:feature:*` 可依赖 domain、core 与极小的 `:feature:*:api`；不得依赖 data、
+   contract 或 runtime 实现。
+5. Feature 不依赖另一个 Feature 的实现。`:app` 在 Workbench destination 中组合
+   内嵌的 Chat／Preview，并以独立 destination 打开 Version／Build；新增子模块时
+   保持这条规则并补模块图反例测试。
    其他跨 Feature 导航仍只通过 `:app` 或极小的 `:feature:<name>:api`。
-6. `:app` 是 Android composition root，负责 Application 设置、根导航和安装 feature entry；不放 Screen、ViewModel、Repository 或业务工作流。
+   第一阶段只组合 Feature 层占位，不接 domain/data；见
+   [工作区界面占位方案](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md)。
+6. `:app` 是 Android composition root，负责 Application 设置、根导航、Feature Route
+   与 UI 插槽的连接；不放 Screen、ViewModel、Repository、业务状态或业务工作流。
 7. `:shell` 是独立 APK，不依赖业务 feature。
 
-`verifyModuleGraph` 与 `verifyArchitectureSources` 已接入 `check`。前者目前强制的是上述
-**现行**模块图，尚未实现计划中的容器依赖例外；文档规则变更须与校验器变更一起交付。
+`verifyModuleGraph` 与 `verifyArchitectureSources` 已接入 `check`。前者已禁止 Feature
+实现之间的依赖；新增模块时要为其补反例测试，不能放宽这条规则。
 
 ## 当前模块职责
 
@@ -86,16 +92,19 @@ graph TD
 | Domain 工作流 | `:domain:project`、`:domain:template`、`:domain:version`、`:domain:agent`、`:domain:preview`、`:domain:settings` | 跨资源应用操作及业务语义。 |
 | UI Feature | `:feature:projects`、`:feature:workbench`、`:feature:templates`、`:feature:versions`、`:feature:settings`、`:feature:build` | 面向用户的流程、页面状态与平台 bridge。 |
 
-当前 `:feature:workbench` 只有占位 Route。目标是让它仅承担项目内容器职责，另建
+当前 `:feature:workbench` 仍是临时 Route，包含初始版本提示。目标是让它承担项目
+内容器职责，另建
 `:feature:chat`（含会话抽屉）与 `:feature:preview`（含控制台）。这两个模块尚未出现在
-`settings.gradle.kts`；职责、依赖方向和迁移门槛见
+`settings.gradle.kts`；由 `:app` 将它们的 Route 接入工作区内容插槽，并将已有
+`:feature:versions`、`:feature:build` 的项目级页面设为独立 destination。职责、
+依赖方向和迁移门槛见
 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
 ## 所有权规则
 
 | 关注点 | Owner | 明确不属于 |
 | --- | --- | --- |
-| 用户意图、渲染、UI state、Activity Result / WebView bridge | 各业务 `:feature:*`；Workbench 只组合子功能 | Repository、Agent runtime、filesystem、Git、SDK client |
+| 用户意图、渲染、UI state、Activity Result / WebView bridge | 各业务 `:feature:*`；Workbench 拥有容器 UI，`:app` 连接插槽 | Repository、Agent runtime、filesystem、Git、SDK client |
 | 命名的应用工作流、授权、顺序与恢复策略 | `:domain:*` | Composable、ViewModel、DAO、SDK adapter |
 | 项目文件、会话、模板、配置与 runtime-log 数据 | 对应 `:data:*` | Feature 或其他 data 模块 |
 | Room、DataStore、filesystem、Git、Keystore 与 HTTP 机制 | 对应技术 `:core:*` | Domain 业务策略 |

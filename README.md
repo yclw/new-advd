@@ -6,6 +6,8 @@ documents describe both enforced boundaries and planned work, and label the diff
 
 The architecture map is [ARCHITECTURE.md](ARCHITECTURE.md). The project workbench module
 plan and migration checklist are in [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md).
+The first implementation phase, with AI and non-AI features kept as UI placeholders, is in
+[WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md).
 The project runtime lifecycle and recovery target is in
 [PROJECT_RUNTIME_ARCHITECTURE.md](PROJECT_RUNTIME_ARCHITECTURE.md).
 
