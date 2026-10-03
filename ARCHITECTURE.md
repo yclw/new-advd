@@ -39,8 +39,8 @@ Composable -> ViewModel -> domain use case -> data resource -> core technology
 graph TD
     app[":app"] --> feature[":feature:*"]
     app --> workbench[":feature:workbench 工作区容器"]
-    app --> chat[":feature:chat 计划中"]
-    app --> previewUi[":feature:preview 计划中"]
+    app --> chat[":feature:chat 占位界面"]
+    app --> previewUi[":feature:preview 占位界面"]
     app --> versionsUi[":feature:versions 项目级页面"]
     app --> buildUi[":feature:build 项目级页面"]
 
@@ -90,13 +90,11 @@ graph TD
 | 数据资源 | `:data:project`、`:data:template`、`:data:session`、`:data:ai-config`、`:data:settings` | 资源契约、默认实现、存储一致性和资源级错误；工作区文件、版本和 Preview 日志归 `:data:project`。 |
 | Agent 与项目 runtime 契约／引擎 | `:contract:agent`、`:contract:project-runtime`、`:agent:runtime-koog` | SDK 无关的 Agent 工具协议、项目关闭 lifecycle port 及 Koog 实现。 |
 | Domain 工作流 | `:domain:project`、`:domain:template`、`:domain:version`、`:domain:agent`、`:domain:preview`、`:domain:settings` | 跨资源应用操作及业务语义。 |
-| UI Feature | `:feature:projects`、`:feature:workbench`、`:feature:templates`、`:feature:versions`、`:feature:settings`、`:feature:build` | 面向用户的流程、页面状态与平台 bridge。 |
+| UI Feature | `:feature:projects`、`:feature:workbench`、`:feature:chat`、`:feature:preview`、`:feature:templates`、`:feature:versions`、`:feature:settings`、`:feature:build` | 面向用户的流程、页面状态与平台 bridge。 |
 
-当前 `:feature:workbench` 仍是临时 Route，包含初始版本提示。目标是让它承担项目
-内容器职责，另建
-`:feature:chat`（含会话抽屉）与 `:feature:preview`（含控制台）。这两个模块尚未出现在
-`settings.gradle.kts`；由 `:app` 将它们的 Route 接入工作区内容插槽，并将已有
-`:feature:versions`、`:feature:build` 的项目级页面设为独立 destination。职责、
+当前 `:feature:workbench` 是纯 UI 容器，`:feature:chat` 与 `:feature:preview` 提供内嵌
+占位 Route，`:feature:versions` 与 `:feature:build` 提供项目级占位 Route。`:app` 负责
+组合和导航。真实业务能力仍待后续方案接入。职责、
 依赖方向和迁移门槛见
 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 

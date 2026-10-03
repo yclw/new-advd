@@ -1,0 +1,7 @@
+<resources>
+    <string name="preview_title">Preview</string>
+    <string name="preview_placeholder">Interface placeholder — these features are not connected yet.</string>
+    <string name="preview_description">The project preview will appear here when available.</string>
+    <string name="console_title">Console</string>
+    <string name="console_description">Console output will appear here when available.</string>
+</resources>

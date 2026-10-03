@@ -5,6 +5,7 @@
 **/.cxx/
 **/bin/
 !feature/build/
+!feature/build/src/main/java/com/aeibi/avd/feature/build/
 feature/build/build/
 .DS_Store
 *.hprof

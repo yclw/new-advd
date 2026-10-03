@@ -12,6 +12,52 @@ class ModuleGraphConventionPluginTest {
     val testProject = TemporaryFolder()
 
     @Test
+    fun `feature implementation dependencies fail verification`() {
+        val root = testProject.root
+        root.file("settings.gradle.kts").writeText(
+            """
+            rootProject.name = "module-graph-test"
+            include(":feature:workbench", ":feature:chat", ":feature:preview", ":feature:versions")
+            """.trimIndent()
+        )
+        root.file("build.gradle.kts").writeText(
+            """
+            plugins {
+                base
+                id("avd.module-graph")
+            }
+            """.trimIndent()
+        )
+        root.file("feature/workbench/build.gradle.kts").writeText(
+            """
+            plugins { `java-library` }
+            dependencies {
+                implementation(project(":feature:chat"))
+                implementation(project(":feature:versions"))
+            }
+            """.trimIndent()
+        )
+        root.file("feature/chat/build.gradle.kts").writeText(
+            """
+            plugins { `java-library` }
+            dependencies { implementation(project(":feature:preview")) }
+            """.trimIndent()
+        )
+        root.file("feature/preview/build.gradle.kts").writeText("plugins { `java-library` }")
+        root.file("feature/versions/build.gradle.kts").writeText("plugins { `java-library` }")
+
+        val result = GradleRunner.create()
+            .withProjectDir(root)
+            .withArguments("verifyModuleGraph")
+            .withPluginClasspath(listOf(pluginJar()))
+            .buildAndFail()
+
+        assertTrue(result.output, result.output.contains(":feature:workbench must not depend on :feature:chat"))
+        assertTrue(result.output, result.output.contains(":feature:workbench must not depend on :feature:versions"))
+        assertTrue(result.output, result.output.contains(":feature:chat must not depend on :feature:preview"))
+    }
+
+    @Test
     fun `feature to data dependency fails verification`() {
         val root = testProject.root
         root.file("settings.gradle.kts").writeText(

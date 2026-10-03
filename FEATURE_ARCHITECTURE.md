@@ -34,8 +34,8 @@ ViewModel 或模块，也不要仅因一个页面或一个 tab 就创建模块�
 | --- | --- | --- |
 | `:feature:projects` | 项目列表、创建、编辑、初始化入口 | 工作区写入、模板展开、初始快照 |
 | `:feature:workbench` | 项目内容器、标题、内嵌区域选择、跨功能入口与显式关闭确认；正式 Chat 接入后再决定 Session 选择 | 聊天时间线、Preview WebView、Console 日志、任何 runtime handle |
-| `:feature:chat`（计划） | 当前阶段仅有 Chat／AI 占位；后续界面范围待定 | 当前阶段不创建会话或 Agent 状态 |
-| `:feature:preview`（计划） | 预览、WebView bridge、控制台与日志选择 | Preview backend、日志存储、项目文件 |
+| `:feature:chat` | 当前阶段仅有 Chat／AI 占位；后续界面范围待定 | 当前阶段不创建会话或 Agent 状态 |
+| `:feature:preview` | 当前阶段仅有 Preview／Console 占位；后续拥有预览与控制台交互 | Preview backend、日志存储、项目文件 |
 | `:feature:templates` | 模板浏览、筛选与选择 | 模板下载、缓存与内容读取 |
 | `:feature:versions` | 快照历史、对比入口、恢复确认 UI | 快照恢复与文件替换 |
 | `:feature:settings` | 主题、语言、AI 配置页面 | DataStore、Keystore、AppCompat locale 调用 |
@@ -78,7 +78,8 @@ Gradle 一律先使用 `implementation`。Feature 的 public API 不应泄露 do
 跨 Feature 导航这一真实需求，才新增极小的 `:feature:<name>:api`，其中只放 route 与稳定 ID。
 现有 `verifyModuleGraph` 已禁止 Feature 实现之间的依赖；新增 Chat／Preview 占位模块时保留规则并
 补反例测试，不添加容器特例。`:app` 只连接公开 Route、参数和回调，不承担业务状态或布局。
-内嵌内容使用一个按 `WorkbenchSection` 选择的插槽；Version／Build 默认是由工作区
+内嵌内容使用一个插槽同时保持 Chat 与 Preview 的组合，由 `WorkbenchSection` 决定放置
+哪个界面；Version／Build 默认是由工作区
 入口打开的独立项目级页面，不为每个项目内功能增加一个插槽参数。
 
 ## 4. 推荐目录与可见性

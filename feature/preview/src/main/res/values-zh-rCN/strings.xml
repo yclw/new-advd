@@ -1,0 +1,7 @@
+<resources>
+    <string name="preview_title">预览</string>
+    <string name="preview_placeholder">界面占位，功能尚未接入。</string>
+    <string name="preview_description">项目预览将在功能接入后显示于此。</string>
+    <string name="console_title">控制台</string>
+    <string name="console_description">控制台输出将在功能接入后显示于此。</string>
+</resources>

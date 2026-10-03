@@ -1,12 +1,9 @@
 <resources>
-    <string name="workbench_project">项目：%1$s</string>
-    <string name="workbench_back">返回项目列表</string>
-    <string name="workbench_version_recorded">已记录第一个版本。</string>
-    <string name="workbench_unrecorded_changes">已记录第一个版本，之后的修改尚未记录。</string>
-    <string name="workbench_version_off">尚未开始记录版本。</string>
-    <string name="workbench_record_first_version">记录第一个版本</string>
-    <string name="workbench_version_prompt_title">要记录第一个版本吗？</string>
-    <string name="workbench_version_prompt_message">将当前工作区记录为第一个版本。记录期间仍可继续编辑。</string>
-    <string name="workbench_later">以后再说</string>
-    <string name="workbench_version_error">无法更新版本记录，请重试。</string>
+    <string name="workbench_title">工作区</string>
+    <string name="workbench_back">返回</string>
+    <string name="workbench_chat">聊天 / AI</string>
+    <string name="workbench_preview">预览 / 控制台</string>
+    <string name="workbench_versions">版本</string>
+    <string name="workbench_build">构建</string>
+    <string name="workbench_settings">应用设置</string>
 </resources>

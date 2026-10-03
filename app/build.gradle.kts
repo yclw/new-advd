@@ -16,10 +16,13 @@ android {
         applicationId = "com.aeibi.avd"
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 }
 
 dependencies {
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.material3)
     implementation(project(":core:common"))
     implementation(project(":core:model"))
     implementation(project(":core:navigation"))
@@ -27,6 +30,8 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":feature:projects"))
     implementation(project(":feature:workbench"))
+    implementation(project(":feature:chat"))
+    implementation(project(":feature:preview"))
     implementation(project(":feature:templates"))
     implementation(project(":feature:versions"))
     implementation(project(":feature:settings"))
@@ -46,4 +51,11 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.kotlinx.coroutines.core)
     implementation("androidx.compose.runtime:runtime-saveable")
+
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

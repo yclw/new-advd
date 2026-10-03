@@ -6,8 +6,5 @@ plugins {
 android { namespace = "com.aeibi.avd.feature.build" }
 
 dependencies {
-    implementation(project(":core:navigation"))
-    implementation(project(":core:designsystem"))
-    implementation(project(":core:ui"))
-    implementation(project(":domain:project"))
+    implementation(project(":core:common"))
 }
