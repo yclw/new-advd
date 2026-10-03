@@ -8,7 +8,7 @@
 > `:domain:version` 的阶段性实现契约。
 > 当前项目 metadata 与图标已改由 Room 保存；下文的 `project.json` 是旧设计记录，
 > 后续初始化实现应更新 Room 中的项目状态，并继续处理数据库与文件/Git 之间的恢复。
-> 本期只实现**空白项目（Blank）初始化**；模板和导入不实现，但边界必须允许它们复用相同的发布、
+> 本期只实现**空白项目（Blank）初始化**；导入不实现，但边界必须允许它复用相同的发布、
 > Git 首版本和恢复流程。
 
 相关规范：
@@ -40,7 +40,7 @@ Create draft
 ```
 
 Blank 是唯一可选来源。它使用一个由 domain 定义的、固定且可测试的最小工作区内容；本期不定义
-模板、导入文件、预览服务、Agent、远端 Git、分支或合并。
+导入文件、预览服务、Agent、远端 Git、分支或合并。
 
 ### 1.2 非目标
 
@@ -64,7 +64,7 @@ Blank 是唯一可选来源。它使用一个由 domain 定义的、固定且可
 - 任意一次进程死亡、I/O 失败或 Git 失败，不得把不完整项目发布为 `READY`；
 - `READY` 项目总有一个可解析的初始线性 revision；
 - 重启后可恢复或明确标记未完成初始化，不会重复创建首个 commit；
-- 后续 Template、Import 初始化方式可以复用发布事务，不需要改写 `READY` 不变量或 Version API；
+- 后续 Import 初始化方式可以复用发布事务，不需要改写 `READY` 不变量或 Version API；
 - 相关 unit/integration test 与模块图校验通过。
 
 ---
@@ -73,15 +73,14 @@ Blank 是唯一可选来源。它使用一个由 domain 定义的、固定且可
 
 ### 2.1 初始化来源与发布事务分离
 
-“Blank / Template / Import”不是同一个简单操作。它们的内容准备、校验和错误都不同；只有最后的
+“Blank / Import”不是同一个简单操作。它们的内容准备、校验和错误都不同；只有最后的
 发布过程相同。
 
 ```text
 source-specific preparation                  common publication transaction
 
 Blank       -> fixed initial workspace  ─┐
-Template    -> load + validate template  ─┼-> staging -> initial revision -> READY
-Import      -> inspect + normalize input ─┘
+Import      -> inspect + normalize input ─┴─> staging -> initial revision -> READY
 ```
 
 因此本期实现：
@@ -90,7 +89,7 @@ Import      -> inspect + normalize input ─┘
 class InitializeBlankProjectUseCase
 ```
 
-而不是提前暴露包含尚不存在的 `TemplateId` / archive 输入的泛化 source union。第二种初始化方式
+而不是提前暴露包含尚不存在的 archive 输入的泛化 source union。第二种初始化方式
 真正落地后，再抽取 shared internal publisher；不要让猜测出来的抽象先成为 public API。
 
 ### 2.2 domain 编排 Project 与 Version 资源
@@ -300,7 +299,7 @@ revision id 一致，再发布 `workspace/` 与 `git/`、写 `READY` metadata �
 `resolveInitializationFailure()` 读取 journal 决定可以清理并转 `FAILED`，还是必须维持
 `INITIALIZING` 等待恢复；domain 不根据一次下层失败直接删除 staging。
 
-上述接口仅表达资源操作。模板读取、导入解压、用户选择来源和初始 revision 的业务顺序不属于
+上述接口仅表达资源操作。导入解压、用户选择来源和初始 revision 的业务顺序不属于
 `ProjectRepository`。
 
 ### 4.2 `:data:project`：Version 资源契约
@@ -370,7 +369,7 @@ layout 或 journal。
 `BlankWorkspaceDefinition` 初期可以是 domain 内部固定文件集。首个 Blank 的文件名和内容要先产品
 确认；在确认前不得擅自生成框架、构建脚本、依赖锁文件或 README。测试可使用一个小的确定性 fixture。
 
-当 Template 或 Import 真正加入时，抽取 domain internal 的 `ProjectInitializationPublisher`，复用
+当 Import 真正加入时，抽取 domain internal 的 `ProjectInitializationPublisher`，复用
 “prepare -> initial revision -> publish”序列；每个来源仍保留其独立的 use case 和 source-specific
 验证。不要让 Feature 传通用 source 参数以绕过命名用例。
 
@@ -485,13 +484,13 @@ Feature/UI test 代替 filesystem、Git 或 crash recovery 验证。
 
 ## 7. 后续初始化方式的接入规则
 
-新增 Template 或 Import 时必须：
+新增 Import 时必须：
 
 1. 使用自己的命名 use case 和来源特有输入/校验；
 2. 在进入 `prepareInitialization()` 前将输入转换为已验证的 `InitialWorkspaceContent`；
 3. 复用相同 journal、lease、`createInitialRevision()` 与 publish 语义；
 4. 不绕过 staging、直接写 active workspace，也不创建特殊的无 Git `READY` 项目；
-5. 在 journal 记录 source kind，但不将 Android `Uri`、archive 路径、模板本地路径或远端 URL
+5. 在 journal 记录 source kind，但不将 Android `Uri`、archive 路径或远端 URL
    作为长期 Project metadata；
 6. 为该来源新增独立的恢复、取消、安全路径和内容大小测试。
 

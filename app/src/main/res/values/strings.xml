@@ -1,5 +1,3 @@
 <resources>
     <string name="app_name">Android Vibe Design</string>
-    <string name="app_invalid_project">The project link is invalid.</string>
-    <string name="app_back">Back</string>
 </resources>

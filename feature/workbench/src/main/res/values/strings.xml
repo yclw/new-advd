@@ -1,9 +1,5 @@
 <resources>
     <string name="workbench_title">Workspace</string>
     <string name="workbench_back">Back</string>
-    <string name="workbench_chat">Chat / AI</string>
-    <string name="workbench_preview">Preview / Console</string>
-    <string name="workbench_versions">Versions</string>
-    <string name="workbench_build">Build</string>
-    <string name="workbench_settings">App settings</string>
+    <string name="workbench_placeholder">Workspace interface placeholder.</string>
 </resources>

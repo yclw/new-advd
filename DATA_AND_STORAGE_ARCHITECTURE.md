@@ -21,7 +21,7 @@
 
 判断代码位置时，按顺序提问：
 
-1. API 是否出现 `Project`、`Session`、`Template`、`Theme`、Provider 等业务概念？是则属于
+1. API 是否出现 `Project`、`Session`、`Theme`、Provider 等业务概念？是则属于
    相应 `:data:<area>`。
 2. 是否需要协调两个以上资源、做业务校验或定义恢复流程？是则属于 `:domain:<area>`。
 3. 是否只封装 Room、DataStore、文件、Git、Keystore 或 HTTP，且不理解业务语义？是则属于
@@ -37,7 +37,6 @@
                  └─> :core:database                 （项目 metadata 与 icon）
 
 :data:session ─────> :core:database                 （按需接入）
-:data:template ────> :core:filesystem / :core:network（按需接入）
 :data:settings ────> :core:datastore                （共享原语出现后接入）
 :data:ai-config ───> :core:datastore / :core:secure-storage（按需接入）
 
@@ -63,7 +62,6 @@ Feature 层占位；真实 Chat／Preview 业务接入前再补齐所需实现�
 | 模块 | 资源 owner | 下层技术能力 |
 | --- | --- | --- |
 | `:data:project` | 项目元数据、工作区文件、导入导出、项目锁、版本快照与 Preview 日志 | filesystem、git、database |
-| `:data:template` | 模板索引、内容、本地资产和远端模板来源 | filesystem、network、database |
 | `:data:session` | 会话、消息、turn 状态与恢复记录 | database |
 | `:data:settings` | 主题和应用语言偏好 | datastore、AppCompat locale |
 | `:data:ai-config` | Provider 配置、已选模型、密钥引用与配置状态 | datastore、secure-storage |
@@ -119,7 +117,7 @@ domain 的 public use case API 到 feature。确实跨多个独立业务区稳�
 物理目录布局由 aggregate root 中的 internal 类型共享。不要为了层次感预建 `local/`、`remote/`、`mapper/` 或 `tool/` 目录。只有一个文件已经
 明显承担独立职责时才提取，例如：Repository 同时读 Room 和网络时再增加 internal
 `LocalProjectSource`／`RemoteProjectSource`；存在多个非平凡转换时再增加 mapper；真正实现
-Agent 工具时再增加 tool 文件或包。目录是代码复杂度的结果，不是提交代码前必须满足的模板。
+Agent 工具时再增加 tool 文件或包。目录是代码复杂度的结果，不是提交代码前必须满足的结构。
 
 无论文件放在哪里，以下规则固定：
 
@@ -172,7 +170,7 @@ shell。只有某项技术能力确实要建立在另一项更基础的 core 技
 负责经过校验的相对路径、原子读写、目录创建／列举、临时文件、移动与文件锁等基础操作。
 
 - 只接受受控 root 与相对路径；不得提供“任意绝对路径读写”的模型可见 API。
-- 不知道 `ProjectId`、项目目录布局、导入格式、模板或版本快照。
+- 不知道 `ProjectId`、项目目录布局、导入格式或版本快照。
 - workspace data 模块把 `ProjectId` 映射为受控工作区 root，再调用 filesystem。
 - 所有写操作应有明确覆盖、原子替换和取消语义。
 
@@ -199,7 +197,7 @@ shell。只有某项技术能力确实要建立在另一项更基础的 core 技
 
 负责 transport client、认证传输、request／response DTO、序列化和网络错误的初步分类。
 
-- 不定义 `TemplateRepository`、项目同步策略或 AI 配置业务语义。
+- 不定义项目同步策略或 AI 配置业务语义。
 - DTO 只在 network/data adapter 内流动；data mapper 转换为稳定资源模型。
 - 超时、重试、缓存、离线策略由调用的 data/domain 按业务需求决定；不要在通用 client
   隐式重试会改变数据的请求。
@@ -248,8 +246,8 @@ scope 或 `@IntoSet` 注册表。
 3. 将 data 改为依赖该 adapter，并保留资源 mapping、错误语义和业务边界。
 4. 为新增 module dependency 更新模块图反例测试、模块 README 和本文。
 
-示例：实现“创建项目并写入模板”时，先在 `:data:project` 定义资源合同；当需要安全写入
-文件时提取 `AtomicFileStore` 到 `:core:filesystem`。项目目录布局、模板展开、项目锁和错误
+示例：实现“创建项目并写入初始文件”时，先在 `:data:project` 定义资源合同；当需要安全写入
+文件时提取 `AtomicFileStore` 到 `:core:filesystem`。项目目录布局、项目锁和错误
 code 仍留在 workspace data，而不是进入 filesystem。
 
 ## 7. 测试与评审清单

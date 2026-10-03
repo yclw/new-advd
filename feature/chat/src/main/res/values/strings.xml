@@ -1,5 +1,0 @@
-<resources>
-    <string name="chat_title">Chat / AI</string>
-    <string name="chat_placeholder">Interface placeholder — this feature is not connected yet.</string>
-    <string name="chat_description">Messages and AI actions will appear here when the feature is available.</string>
-</resources>

@@ -1,6 +1,0 @@
-<resources>
-    <string name="build_title">构建</string>
-    <string name="build_back">返回</string>
-    <string name="build_placeholder">界面占位，功能尚未接入。</string>
-    <string name="build_description">构建选项和结果将在功能接入后显示于此。</string>
-</resources>

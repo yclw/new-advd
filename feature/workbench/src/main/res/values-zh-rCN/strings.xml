@@ -1,9 +1,5 @@
 <resources>
     <string name="workbench_title">工作区</string>
     <string name="workbench_back">返回</string>
-    <string name="workbench_chat">聊天 / AI</string>
-    <string name="workbench_preview">预览 / 控制台</string>
-    <string name="workbench_versions">版本</string>
-    <string name="workbench_build">构建</string>
-    <string name="workbench_settings">应用设置</string>
+    <string name="workbench_placeholder">工作区界面占位。</string>
 </resources>

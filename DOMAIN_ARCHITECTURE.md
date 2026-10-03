@@ -27,8 +27,7 @@ Room、DataStore、文件、Git、网络、Keystore 或 Koog SDK；它定义“�
 
 | 模块 | 负责的业务能力 |
 | --- | --- |
-| `:domain:project` | 项目创建、重命名、删除、导入导出、模板应用、项目生命周期与恢复 |
-| `:domain:template` | 模板目录浏览与模板内容读取 |
+| `:domain:project` | 项目创建、重命名、删除、导入导出、项目生命周期与恢复 |
 | `:domain:version` | 项目版本快照浏览、创建与恢复 |
 | `:domain:agent` | Agent turn 的授权、运行、取消、恢复、快照前置条件和事件映射 |
 | `:domain:preview` | Preview server 的启动、停止、项目级 Preview state 与恢复后的 stopped 语义 |
@@ -49,7 +48,7 @@ Room、DataStore、文件、Git、网络、Keystore 或 Koog SDK；它定义“�
 - 定义 feature 可调用的、有名称的 application use case。
 - 编排多个 Repository：顺序、前置校验、授权、幂等、事务边界、重试和恢复。
 - 将 data 的资源模型／结果转换为 feature 可消费的 domain 请求、结果和事件。
-- 定义跨资源不变量。例如初始化项目必须先建立工作区、再写入模板内容、再建立初始快照，
+- 定义跨资源不变量。例如初始化项目必须先建立工作区、再写入初始内容、再建立初始快照，
   最后才发布为 `READY`。
 - 决定什么是用户可处理的错误，向 feature 返回稳定 `AppError`／`ErrorCode`，而非技术异常。
 - 为 Agent 场景决定 scope、权限、快照和恢复政策；runtime 只负责模型及工具调度。
@@ -94,7 +93,6 @@ class CreateProjectUseCase @Inject constructor(
 | 推荐 | 不推荐 | 原因 |
 | --- | --- | --- |
 | `CreateProjectUseCase` | `InsertProjectUseCase` | 对调用者表达业务结果，而不是存储动作 |
-| `InitializeProjectFromTemplateUseCase` | `CopyTemplateFilesUseCase` | 明确完整工作流与前置条件 |
 | `ObserveProjectSummariesUseCase` | `GetProjectsUseCase` | 明确长期观察而非一次性读取 |
 | `RestoreSnapshotUseCase` | `GitCheckoutUseCase` | 隐藏 Git 技术实现，表达恢复语义 |
 | `RunAgentTurnUseCase` | `KoogAgentRunnerUseCase` | runtime 可替换，业务语义稳定 |

@@ -29,7 +29,7 @@
 5. 从图片选择器选择图片，经 uCrop 裁剪为正方形，并最终保存为**严格 512 × 512 的 PNG**；
 6. 重启后能恢复项目资料和图标；中断的创建、更新、删除不会被错误显示为有效项目。
 
-本期不实现模板内容写入、导入导出、快照、Agent 或 Preview backend；但 CRUD 的状态和 API 必须为这些流程预留正确入口，不能让 Workbench 打开未初始化的项目。
+本期不实现导入导出、快照、Agent 或 Preview backend；但 CRUD 的状态和 API 必须为这些流程预留正确入口，不能让 Workbench 打开未初始化的项目。
 
 完成定义：
 
@@ -81,7 +81,7 @@
 ```text
 Create project
   -> DRAFT
-  -> （后续：选择空白/模板/导入）INITIALIZING
+  -> （后续：选择空白/导入）INITIALIZING
   -> READY
 
 初始化失败 -> FAILED

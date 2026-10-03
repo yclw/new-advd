@@ -1,5 +1,0 @@
-<resources>
-    <string name="chat_title">聊天 / AI</string>
-    <string name="chat_placeholder">界面占位，功能尚未接入。</string>
-    <string name="chat_description">消息和 AI 操作将在功能接入后显示于此。</string>
-</resources>

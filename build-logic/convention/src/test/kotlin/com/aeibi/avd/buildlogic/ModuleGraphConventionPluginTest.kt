@@ -17,7 +17,7 @@ class ModuleGraphConventionPluginTest {
         root.file("settings.gradle.kts").writeText(
             """
             rootProject.name = "module-graph-test"
-            include(":feature:workbench", ":feature:chat", ":feature:preview", ":feature:versions")
+            include(":feature:workbench", ":feature:projects", ":feature:settings")
             """.trimIndent()
         )
         root.file("build.gradle.kts").writeText(
@@ -32,19 +32,17 @@ class ModuleGraphConventionPluginTest {
             """
             plugins { `java-library` }
             dependencies {
-                implementation(project(":feature:chat"))
-                implementation(project(":feature:versions"))
+                implementation(project(":feature:projects"))
             }
             """.trimIndent()
         )
-        root.file("feature/chat/build.gradle.kts").writeText(
+        root.file("feature/projects/build.gradle.kts").writeText(
             """
             plugins { `java-library` }
-            dependencies { implementation(project(":feature:preview")) }
+            dependencies { implementation(project(":feature:settings")) }
             """.trimIndent()
         )
-        root.file("feature/preview/build.gradle.kts").writeText("plugins { `java-library` }")
-        root.file("feature/versions/build.gradle.kts").writeText("plugins { `java-library` }")
+        root.file("feature/settings/build.gradle.kts").writeText("plugins { `java-library` }")
 
         val result = GradleRunner.create()
             .withProjectDir(root)
@@ -54,15 +52,11 @@ class ModuleGraphConventionPluginTest {
 
         assertTrue(
             result.output,
-            result.output.contains(":feature:workbench must not depend on :feature:chat")
+            result.output.contains(":feature:workbench must not depend on :feature:projects")
         )
         assertTrue(
             result.output,
-            result.output.contains(":feature:workbench must not depend on :feature:versions")
-        )
-        assertTrue(
-            result.output,
-            result.output.contains(":feature:chat must not depend on :feature:preview")
+            result.output.contains(":feature:projects must not depend on :feature:settings")
         )
     }
 

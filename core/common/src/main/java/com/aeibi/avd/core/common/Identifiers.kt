@@ -16,7 +16,4 @@ value class PreviewRequestId(val value: String)
 value class SnapshotId(val value: String)
 
 @JvmInline
-value class TemplateId(val value: String)
-
-@JvmInline
 value class ErrorCode(val value: String)

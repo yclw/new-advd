@@ -39,10 +39,6 @@ Composable -> ViewModel -> domain use case -> data resource -> core technology
 graph TD
     app[":app"] --> feature[":feature:*"]
     app --> workbench[":feature:workbench 工作区容器"]
-    app --> chat[":feature:chat 占位界面"]
-    app --> previewUi[":feature:preview 占位界面"]
-    app --> versionsUi[":feature:versions 项目级页面"]
-    app --> buildUi[":feature:build 项目级页面"]
 
     feature --> domain[":domain:*"]
     feature --> featureApi[":feature:*:api"]
@@ -67,9 +63,8 @@ graph TD
 3. `:domain:*` 可以依赖 data 资源契约、`:core:common`、`:core:model`、`:core:logging` 和必要的 `:contract:*`；不得依赖其他 domain、feature、app 或 runtime 实现模块。
 4. `:feature:*` 可依赖 domain、core 与极小的 `:feature:*:api`；不得依赖 data、
    contract 或 runtime 实现。
-5. Feature 不依赖另一个 Feature 的实现。`:app` 在 Workbench destination 中组合
-   内嵌的 Chat／Preview，并以独立 destination 打开 Version／Build；新增子模块时
-   保持这条规则并补模块图反例测试。
+5. Feature 不依赖另一个 Feature 的实现。`:app` 在单个 Navigation 3 返回栈中安装
+   Workbench；新增子模块时保持这条规则并补模块图反例测试。
    其他跨 Feature 导航仍只通过 `:app` 或极小的 `:feature:<name>:api`。
    第一阶段只组合 Feature 层占位，不接 domain/data；见
    [工作区界面占位方案](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md)。
@@ -87,14 +82,13 @@ graph TD
 | App 与构建 | `:app`、`:shell`、`:build-logic:convention` | 组合、APK 入口和共享 Gradle convention。 |
 | 共享 core | `:core:common`、`:core:model`、`:core:logging`、`:core:navigation`、`:core:designsystem`、`:core:ui`、`:core:testing` | 稳定基础类型、模型、日志、导航、UI 基础与测试支持。 |
 | 技术 core | `:core:database`、`:core:datastore`、`:core:filesystem`、`:core:git`、`:core:secure-storage`、`:core:network` | 仅封装技术适配，不带业务资源语义。 |
-| 数据资源 | `:data:project`、`:data:template`、`:data:session`、`:data:ai-config`、`:data:settings` | 资源契约、默认实现、存储一致性和资源级错误；工作区文件、版本和 Preview 日志归 `:data:project`。 |
+| 数据资源 | `:data:project`、`:data:session`、`:data:ai-config`、`:data:settings` | 资源契约、默认实现、存储一致性和资源级错误；工作区文件、版本和 Preview 日志归 `:data:project`。 |
 | Agent 与项目 runtime 契约／引擎 | `:contract:agent`、`:contract:project-runtime`、`:agent:runtime-koog` | SDK 无关的 Agent 工具协议、项目关闭 lifecycle port 及 Koog 实现。 |
-| Domain 工作流 | `:domain:project`、`:domain:template`、`:domain:version`、`:domain:agent`、`:domain:preview`、`:domain:settings` | 跨资源应用操作及业务语义。 |
-| UI Feature | `:feature:projects`、`:feature:workbench`、`:feature:chat`、`:feature:preview`、`:feature:templates`、`:feature:versions`、`:feature:settings`、`:feature:build` | 面向用户的流程、页面状态与平台 bridge。 |
+| Domain 工作流 | `:domain:project`、`:domain:version`、`:domain:agent`、`:domain:preview`、`:domain:settings` | 跨资源应用操作及业务语义。 |
+| UI Feature | `:feature:projects`、`:feature:workbench`、`:feature:settings` | 面向用户的流程、页面状态与平台 bridge。 |
 
-当前 `:feature:workbench` 是纯 UI 容器，`:feature:chat` 与 `:feature:preview` 提供内嵌
-占位 Route，`:feature:versions` 与 `:feature:build` 提供项目级占位 Route。`:app` 负责
-组合和导航。真实业务能力仍待后续方案接入。职责、
+当前 `:feature:workbench` 只提供工作区占位，后续在其中呈现版本操作和构建等功能。
+`:app` 负责组合和导航。真实业务能力仍待后续方案接入。职责、
 依赖方向和迁移门槛见
 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
@@ -102,9 +96,9 @@ graph TD
 
 | 关注点 | Owner | 明确不属于 |
 | --- | --- | --- |
-| 用户意图、渲染、UI state、Activity Result / WebView bridge | 各业务 `:feature:*`；Workbench 拥有容器 UI，`:app` 连接插槽 | Repository、Agent runtime、filesystem、Git、SDK client |
+| 用户意图、渲染、UI state、Activity Result / WebView bridge | 各业务 `:feature:*`；Workbench 拥有自身 UI，`:app` 连接导航回调 | Repository、Agent runtime、filesystem、Git、SDK client |
 | 命名的应用工作流、授权、顺序与恢复策略 | `:domain:*` | Composable、ViewModel、DAO、SDK adapter |
-| 项目文件、会话、模板、配置与 runtime-log 数据 | 对应 `:data:*` | Feature 或其他 data 模块 |
+| 项目文件、会话、配置与 runtime-log 数据 | 对应 `:data:*` | Feature 或其他 data 模块 |
 | Room、DataStore、filesystem、Git、Keystore 与 HTTP 机制 | 对应技术 `:core:*` | Domain 业务策略 |
 | 模型流式输出与工具调用轮次 | `:agent:runtime-koog` | 项目／会话语义、授权、data gateway 发现 |
 | Agent 工具选择、scope、授权、快照与恢复 | `:domain:agent` | Runtime 实现、全局工具注册表、ViewModel |

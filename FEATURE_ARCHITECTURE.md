@@ -32,19 +32,14 @@ ViewModel 或模块，也不要仅因一个页面或一个 tab 就创建模块�
 
 | 模块 | UI owner | 不属于它的内容 |
 | --- | --- | --- |
-| `:feature:projects` | 项目列表、创建、编辑、初始化入口 | 工作区写入、模板展开、初始快照 |
-| `:feature:workbench` | 项目内容器、标题、内嵌区域选择、跨功能入口与显式关闭确认；正式 Chat 接入后再决定 Session 选择 | 聊天时间线、Preview WebView、Console 日志、任何 runtime handle |
-| `:feature:chat` | 当前阶段仅有 Chat／AI 占位；后续界面范围待定 | 当前阶段不创建会话或 Agent 状态 |
-| `:feature:preview` | 当前阶段仅有 Preview／Console 占位；后续拥有预览与控制台交互 | Preview backend、日志存储、项目文件 |
-| `:feature:templates` | 模板浏览、筛选与选择 | 模板下载、缓存与内容读取 |
-| `:feature:versions` | 快照历史、对比入口、恢复确认 UI | 快照恢复与文件替换 |
+| `:feature:projects` | 项目列表、创建、编辑、初始化入口 | 工作区写入、初始快照 |
+| `:feature:workbench` | 当前阶段的工作区占位；后续承载版本操作、构建等项目功能的 UI | 业务执行、持久状态、任何 runtime handle |
 | `:feature:settings` | 主题、语言、AI 配置页面 | DataStore、Keystore、AppCompat locale 调用 |
-| `:feature:build` | 构建相关页面与进度展示 | 构建执行与产物持久化 |
 
 文件浏览／编辑成为真实流程时，可建立 `:feature:files`。控制台先留在 Preview；
 会话 UI 的归属待 AI 阶段设计。工作区的具体
 组合、状态归属和迁移顺序见 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
-当前工作区阶段的 AI 与非 AI 页面都只做 Feature 层占位，不接业务状态；具体范围见
+当前工作区阶段只做 Workbench 的 Feature 层占位，不接业务状态；具体范围见
 [WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md)。
 
 ## 3. 允许依赖与禁止依赖
@@ -55,10 +50,7 @@ ViewModel 或模块，也不要仅因一个页面或一个 tab 就创建模块�
   -> :core:ui / :core:designsystem  // 通用 UI 与设计 token
   -> :core:navigation               // 稳定 route 与仅含 ID 的参数
   -> :feature:<name>:api            // 仅在确有跨 feature 导航时
-:app -> :feature:workbench / :feature:preview
-     -> :feature:versions / :feature:build
-                                  // app 连接内嵌内容与项目级 destination
-     -> :feature:chat              // 当前只组合占位 Route
+:app -> :feature:workbench        // app 安装工作区 destination
 ```
 
 工作区占位阶段不接 domain；以下是功能接入后的目标边界：工作区容器通过
@@ -70,17 +62,14 @@ Feature 不能依赖：
 - `:data:*`、Repository、data DTO、Room entity、DAO、DataStore；
 - `:agent:runtime-koog`、Koog、模型／provider SDK、Agent tool；
 - `File`、文件路径、Git 类型、网络 client、`Context` 持久化访问；
-- 其他 Feature 的实现、Screen、Route、ViewModel 和内部组件。工作区容器通过由 `:app`
-  传入的插槽展示 Chat／AI 与 Preview／Console 占位，不直接 import 子功能；
+- 其他 Feature 的实现、Screen、Route、ViewModel 和内部组件；
 - `:app`、`:shell`。
 
 Gradle 一律先使用 `implementation`。Feature 的 public API 不应泄露 domain 内部模型；只有
 跨 Feature 导航这一真实需求，才新增极小的 `:feature:<name>:api`，其中只放 route 与稳定 ID。
-现有 `verifyModuleGraph` 已禁止 Feature 实现之间的依赖；新增 Chat／Preview 占位模块时保留规则并
+现有 `verifyModuleGraph` 已禁止 Feature 实现之间的依赖；后续新增功能模块时保留规则并
 补反例测试，不添加容器特例。`:app` 只连接公开 Route、参数和回调，不承担业务状态或布局。
-内嵌内容使用一个插槽同时保持 Chat 与 Preview 的组合，由 `WorkbenchSection` 决定放置
-哪个界面；Version／Build 默认是由工作区
-入口打开的独立项目级页面，不为每个项目内功能增加一个插槽参数。
+版本操作和构建后续在 Workbench 中呈现，不创建独立项目级 destination。
 
 ## 4. 推荐目录与可见性
 
@@ -199,7 +188,6 @@ Action 描述用户意图，而不是实现细节：使用 `CreateConfirmed`，�
 ```kotlin
 sealed interface ProjectsEffect {
     data class NavigateToProject(val projectId: ProjectId) : ProjectsEffect
-    data object LaunchTemplatePicker : ProjectsEffect
     data class ShowMessage(val errorCode: ErrorCode) : ProjectsEffect
 }
 ```
@@ -241,9 +229,7 @@ bridge 可以引用 Android API，却只做平台输入输出转换：
 ## 9. 导航规范
 
 - 根导航由 `:app` 安装；Feature 定义自己的 route key 与参数解析，但不控制其他 Feature 的内部实现。
-- `:app` 在 Workbench destination 中把 Chat／AI 与 Preview／Console 占位 Route 接入一个内容插槽；
-  Pane 选择和布局属于容器。Version／Build 由工作区入口发出导航请求，`:app`
-  用同一 `ProjectId` 打开独立 destination，返回时保留 Workbench entry 的 UI 选择。
+- `:app` 用一个 Navigation 3 返回栈安装 Workbench。工作区导航 key 携带稳定的 `ProjectId`。
 - Feature 间仅传 route 和稳定 ID。目标页面重新通过 domain 加载数据，避免携带过期对象。
 - 若多个 Feature 必须直接使用同一 destination，只能新增极小 `:feature:<name>:api`；API 不包含
   Screen、ViewModel、Compose、Repository 或业务模型。

@@ -44,12 +44,10 @@ Android application process
       └─ PreviewRuntimeCoordinator                    [:domain:preview]
           └─ PreviewRuntime(projectId)                 [internal]
 
-:app                                [连接工作区内容插槽与项目级 destination]
-  ├─ :feature:workbench            [项目内容器]
-  ├─ :feature:chat                 [观察 Agent／Session]
-  ├─ :feature:preview              [观察 Preview／Console]
-  ├─ :feature:versions             [项目版本页面]
-  └─ :feature:build                [项目构建页面]
+:app                                [当前连接项目列表与工作区]
+  └─ :feature:workbench            [工作区占位；后续呈现版本操作与构建]
+
+未来界面模块：:feature:chat、:feature:preview
 
 :domain:project
   └─ CloseProjectRuntimeUseCase / RecoverProjectUseCase
@@ -428,7 +426,7 @@ durable turn/mutation journal 与完整关闭／恢复流程仍待实现。在�
 | 场景 | 应验证的结果 |
 | --- | --- |
 | Chat ViewModel 重建 | 正在运行的 turn 未取消，新 UI 可观察同一 turn |
-| Preview Pane 隐藏后重开 | server 未被重启；新 WebView 读取当前 endpoint/revision |
+| 未来 Preview 界面重新打开 | server 未被重启；界面读取当前 endpoint/revision |
 | Console 隐藏 | live log pipeline 仍接收数据，重新显示可读当前有界日志 |
 | Close with active Agent | 新命令被拒绝，cancel intent 先持久化，写 lease 最后释放 |
 | Agent 取消时发生文件写 | data 原子性不被破坏；journal 可恢复 |
