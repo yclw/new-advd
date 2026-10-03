@@ -52,9 +52,18 @@ class ModuleGraphConventionPluginTest {
             .withPluginClasspath(listOf(pluginJar()))
             .buildAndFail()
 
-        assertTrue(result.output, result.output.contains(":feature:workbench must not depend on :feature:chat"))
-        assertTrue(result.output, result.output.contains(":feature:workbench must not depend on :feature:versions"))
-        assertTrue(result.output, result.output.contains(":feature:chat must not depend on :feature:preview"))
+        assertTrue(
+            result.output,
+            result.output.contains(":feature:workbench must not depend on :feature:chat")
+        )
+        assertTrue(
+            result.output,
+            result.output.contains(":feature:workbench must not depend on :feature:versions")
+        )
+        assertTrue(
+            result.output,
+            result.output.contains(":feature:chat must not depend on :feature:preview")
+        )
     }
 
     @Test
