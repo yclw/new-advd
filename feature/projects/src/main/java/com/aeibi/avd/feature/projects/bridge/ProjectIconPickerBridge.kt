@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.core.graphics.scale
 import com.aeibi.avd.core.model.ProjectIcon
 import com.aeibi.avd.feature.projects.R
 import com.yalantis.ucrop.UCrop
@@ -118,7 +119,7 @@ private fun Context.prepareIcon(uri: Uri): ProjectIcon? {
     val scaled = if (original.width == ICON_SIZE && original.height == ICON_SIZE) {
         original
     } else {
-        Bitmap.createScaledBitmap(original, ICON_SIZE, ICON_SIZE, true).also { original.recycle() }
+        original.scale(ICON_SIZE, ICON_SIZE).also { original.recycle() }
     }
     return try {
         val bytes = ByteArrayOutputStream().use { output ->

@@ -12,6 +12,7 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
+    implementation(project(":core:ui"))
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation("androidx.compose.runtime:runtime-saveable")
 

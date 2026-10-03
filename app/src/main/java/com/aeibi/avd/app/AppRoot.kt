@@ -7,10 +7,11 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.aeibi.avd.core.common.ProjectId
 import com.aeibi.avd.feature.projects.ProjectsRoute
-import com.aeibi.avd.feature.settings.AppearanceSettingsRoute
-import com.aeibi.avd.feature.settings.LanguageSettingsRoute
 import com.aeibi.avd.feature.settings.SettingsRoute
+import com.aeibi.avd.feature.settings.appearance.AppearanceSettingsRoute
+import com.aeibi.avd.feature.settings.language.LanguageSettingsRoute
 import com.aeibi.avd.feature.workbench.WorkbenchRoute
 import kotlinx.serialization.Serializable
 
@@ -32,8 +33,9 @@ fun AppRoot() {
                     onSettingsRequested = { backStack.add(AppDestination.Settings) }
                 )
             }
-            entry<AppDestination.Workbench> {
+            entry<AppDestination.Workbench> { destination ->
                 WorkbenchRoute(
+                    projectId = ProjectId(destination.projectId),
                     onNavigateBack = { backStack.removeLastOrNull() }
                 )
             }

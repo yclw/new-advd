@@ -12,7 +12,8 @@
 Workbench 显示中性标题、占位说明和返回按钮，不显示虚构的版本记录、构建结果或进度。
 项目列表现有的 CRUD 与应用设置保持独立。
 
-`:app` 用一个 Navigation 3 `NavDisplay` 安装 Workbench，导航 key 保存稳定的 `ProjectId`。
+`:app` 用一个 Navigation 3 `NavDisplay` 安装 Workbench，导航 key 保存稳定的 `ProjectId`，
+并传给 `WorkbenchRoute`。
 `:feature:workbench` 不依赖其他 Feature 的实现，不读取项目资料，也不调用 domain use
 case。版本操作与构建任务后续在 Workbench 中呈现，执行与恢复仍由相应 domain/data
 owner 管理。
