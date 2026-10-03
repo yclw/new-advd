@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.dropUnlessResumed
 import com.aeibi.avd.core.common.ProjectId
 
 enum class WorkbenchSection {
@@ -49,7 +50,7 @@ fun WorkbenchRoute(
             TopAppBar(
                 title = { Text(stringResource(R.string.workbench_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateBack) {
+                    TextButton(onClick = dropUnlessResumed { onNavigateBack() }) {
                         Text(stringResource(R.string.workbench_back))
                     }
                 }

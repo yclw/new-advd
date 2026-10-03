@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.dropUnlessResumed
 import com.aeibi.avd.core.model.AppLanguage
 import com.aeibi.avd.core.model.ThemeMode
 import com.aeibi.avd.core.model.ThemePalette
@@ -232,8 +233,10 @@ private fun SingleChoiceSettingRow(
 }
 
 @Composable
-private fun BackButton(onClick: () -> Unit) {
-    TextButton(onClick = onClick) { Text(stringResource(R.string.settings_back)) }
+private fun BackButton(onNavigateBack: () -> Unit) {
+    TextButton(onClick = dropUnlessResumed { onNavigateBack() }) {
+        Text(stringResource(R.string.settings_back))
+    }
 }
 
 @Composable

@@ -7,4 +7,5 @@ android { namespace = "com.aeibi.avd.feature.build" }
 
 dependencies {
     implementation(project(":core:common"))
+    implementation(libs.androidx.lifecycle.runtime.compose)
 }

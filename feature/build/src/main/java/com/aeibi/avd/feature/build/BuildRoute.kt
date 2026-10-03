@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.dropUnlessResumed
 import com.aeibi.avd.core.common.ProjectId
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,7 +26,7 @@ fun BuildRoute(projectId: ProjectId, onNavigateBack: () -> Unit) {
             TopAppBar(
                 title = { Text(stringResource(R.string.build_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateBack) {
+                    TextButton(onClick = dropUnlessResumed { onNavigateBack() }) {
                         Text(stringResource(R.string.build_back))
                     }
                 }
