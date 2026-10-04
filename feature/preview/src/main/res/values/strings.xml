@@ -1,0 +1,9 @@
+<resources>
+    <string name="preview_title">Preview</string>
+    <string name="preview_back">Back</string>
+    <string name="preview_hide_console">Hide console</string>
+    <string name="preview_show_console">Show console</string>
+    <string name="preview_not_connected">Preview is not connected yet.</string>
+    <string name="preview_console_title">Console</string>
+    <string name="preview_console_empty">No logs yet.</string>
+</resources>

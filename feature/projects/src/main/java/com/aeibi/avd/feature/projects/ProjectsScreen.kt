@@ -35,7 +35,7 @@ import com.aeibi.avd.feature.projects.component.ProjectProfileDialog
 fun ProjectsScreen(
     uiState: ProjectsUiState,
     onAction: (ProjectsAction) -> Unit,
-    onSettingsRequested: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {}
 ) {
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var editProject by remember { mutableStateOf<ProjectItem?>(null) }
@@ -56,7 +56,7 @@ fun ProjectsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.projects_title)) },
                 actions = {
-                    TextButton(onClick = onSettingsRequested) {
+                    TextButton(onClick = onNavigateToSettings) {
                         Text(stringResource(R.string.projects_settings))
                     }
                 }

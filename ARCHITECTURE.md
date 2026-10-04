@@ -10,7 +10,7 @@
 | 应用工作流、错误、取消与恢复 | [DOMAIN_ARCHITECTURE.md](DOMAIN_ARCHITECTURE.md) |
 | Agent runtime、工具与 SDK 边界 | [AGENT_ARCHITECTURE.md](AGENT_ARCHITECTURE.md) |
 | Feature UI、导航、状态、effect 与平台 bridge | [FEATURE_ARCHITECTURE.md](FEATURE_ARCHITECTURE.md) |
-| 项目工作区容器与子功能组合 | [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md) |
+| 项目工作区导航与子功能组合 | [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md) |
 | 项目级临时运行资源、关闭与进程死亡恢复 | [PROJECT_RUNTIME_ARCHITECTURE.md](PROJECT_RUNTIME_ARCHITECTURE.md) |
 
 旧的 `android-vibe-design/` 仅是实现历史，不是新工程的架构依据。即使旧实现采用不同方式，新增代码仍必须遵循上述专项文档。
@@ -38,7 +38,6 @@ Composable -> ViewModel -> domain use case -> data resource -> core technology
 ```mermaid
 graph TD
     app[":app"] --> feature[":feature:*"]
-    app --> workbench[":feature:workbench 工作区容器"]
 
     feature --> domain[":domain:*"]
     feature --> featureApi[":feature:*:api"]
@@ -63,8 +62,8 @@ graph TD
 3. `:domain:*` 可以依赖 data 资源契约、`:core:common`、`:core:model`、`:core:logging` 和必要的 `:contract:*`；不得依赖其他 domain、feature、app 或 runtime 实现模块。
 4. `:feature:*` 可依赖 domain、core 与极小的 `:feature:*:api`；不得依赖 data、
    contract 或 runtime 实现。
-5. Feature 不依赖另一个 Feature 的实现。`:app` 在单个 Navigation 3 返回栈中安装
-   Workbench；新增子模块时保持这条规则并补模块图反例测试。
+5. Feature 不依赖另一个 Feature 的实现。`:app` 在单个 Navigation 3 返回栈中直接注册
+   Chat、Preview、Build、Version；新增子模块时保持这条规则并补模块图反例测试。
    其他跨 Feature 导航仍只通过 `:app` 或极小的 `:feature:<name>:api`。
    第一阶段只组合 Feature 层占位，不接 domain/data；见
    [工作区界面占位方案](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md)。
@@ -85,9 +84,9 @@ graph TD
 | 数据资源 | `:data:project`、`:data:session`、`:data:ai-config`、`:data:settings` | 资源契约、默认实现、存储一致性和资源级错误；工作区文件、版本和 Preview 日志归 `:data:project`。 |
 | Agent 与项目 runtime 契约／引擎 | `:contract:agent`、`:contract:project-runtime`、`:agent:runtime-koog` | SDK 无关的 Agent 工具协议、项目关闭 lifecycle port 及 Koog 实现。 |
 | Domain 工作流 | `:domain:project`、`:domain:version`、`:domain:agent`、`:domain:preview`、`:domain:settings` | 跨资源应用操作及业务语义。 |
-| UI Feature | `:feature:projects`、`:feature:workbench`、`:feature:settings` | 面向用户的流程、页面状态与平台 bridge。 |
+| UI Feature | `:feature:projects`、`:feature:chat`、`:feature:preview`、`:feature:build`、`:feature:version`、`:feature:workbench`、`:feature:settings` | 面向用户的流程、页面状态与平台 bridge。 |
 
-当前 `:feature:workbench` 只提供工作区占位，后续在其中呈现版本操作和构建等功能。
+当前 `:feature:workbench` 保留给后续工作区级 UI，版本和构建页面已有独立 Feature。
 `:app` 负责组合和导航。真实业务能力仍待后续方案接入。职责、
 依赖方向和迁移门槛见
 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。

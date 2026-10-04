@@ -1,0 +1,13 @@
+<resources>
+    <string name="chat_title">聊天</string>
+    <string name="chat_back">返回</string>
+    <string name="chat_clear_draft">清空草稿</string>
+    <string name="chat_pages">页面</string>
+    <string name="chat_open_preview">预览</string>
+    <string name="chat_open_build">构建</string>
+    <string name="chat_open_version">版本</string>
+    <string name="chat_empty_title">暂无对话</string>
+    <string name="chat_empty_message">聊天消息将在这里显示。</string>
+    <string name="chat_prompt_label">消息</string>
+    <string name="chat_send">发送</string>
+</resources>

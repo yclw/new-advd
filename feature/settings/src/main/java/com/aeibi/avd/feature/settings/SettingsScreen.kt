@@ -20,16 +20,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun SettingsRoute(
     onNavigateBack: () -> Unit,
-    onAppearanceSelected: () -> Unit,
-    onLanguageSelected: () -> Unit
+    onNavigateToAppearanceSettings: () -> Unit,
+    onNavigateToLanguageSettings: () -> Unit
 ) {
     val viewModel: SettingsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     SettingsScreen(
         uiState = uiState,
         onNavigateBack = onNavigateBack,
-        onAppearanceSelected = onAppearanceSelected,
-        onLanguageSelected = onLanguageSelected
+        onNavigateToAppearanceSettings = onNavigateToAppearanceSettings,
+        onNavigateToLanguageSettings = onNavigateToLanguageSettings
     )
 }
 
@@ -38,8 +38,8 @@ fun SettingsRoute(
 internal fun SettingsScreen(
     uiState: SettingsUiState,
     onNavigateBack: () -> Unit,
-    onAppearanceSelected: () -> Unit,
-    onLanguageSelected: () -> Unit
+    onNavigateToAppearanceSettings: () -> Unit,
+    onNavigateToLanguageSettings: () -> Unit
 ) {
     if (uiState.isLoading) {
         SettingsLoadingScreen()
@@ -67,14 +67,14 @@ internal fun SettingsScreen(
                         themeModeName(uiState.themePreference.mode),
                         themePaletteName(uiState.themePreference.palette)
                     ),
-                    onClick = onAppearanceSelected
+                    onClick = onNavigateToAppearanceSettings
                 )
             }
             item {
                 SettingsNavigationRow(
                     title = stringResource(R.string.settings_language_title),
                     summary = languageName(uiState.language),
-                    onClick = onLanguageSelected
+                    onClick = onNavigateToLanguageSettings
                 )
             }
         }

@@ -1,0 +1,13 @@
+<resources>
+    <string name="chat_title">Chat</string>
+    <string name="chat_back">Back</string>
+    <string name="chat_clear_draft">Clear draft</string>
+    <string name="chat_pages">Pages</string>
+    <string name="chat_open_preview">Preview</string>
+    <string name="chat_open_build">Build</string>
+    <string name="chat_open_version">Version</string>
+    <string name="chat_empty_title">No conversation yet</string>
+    <string name="chat_empty_message">Chat messages will appear here.</string>
+    <string name="chat_prompt_label">Message</string>
+    <string name="chat_send">Send</string>
+</resources>

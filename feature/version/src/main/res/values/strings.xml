@@ -1,0 +1,7 @@
+<resources>
+    <string name="version_title">Version</string>
+    <string name="version_back">Back</string>
+    <string name="version_create">Create version</string>
+    <string name="version_history_title">Version history</string>
+    <string name="version_history_empty">No versions to display yet.</string>
+</resources>

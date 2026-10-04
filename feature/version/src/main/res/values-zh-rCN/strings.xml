@@ -1,0 +1,7 @@
+<resources>
+    <string name="version_title">版本</string>
+    <string name="version_back">返回</string>
+    <string name="version_create">创建版本</string>
+    <string name="version_history_title">版本历史</string>
+    <string name="version_history_empty">暂无可显示的版本。</string>
+</resources>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="build_title">Build</string>
+    <string name="build_back">Back</string>
+    <string name="build_start">Start build</string>
+    <string name="build_output_title">Build output</string>
+    <string name="build_output_empty">No builds yet.</string>
+</resources>

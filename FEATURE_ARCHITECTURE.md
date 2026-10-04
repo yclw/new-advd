@@ -33,14 +33,16 @@ ViewModel 或模块，也不要仅因一个页面或一个 tab 就创建模块�
 | 模块 | UI owner | 不属于它的内容 |
 | --- | --- | --- |
 | `:feature:projects` | 项目列表、创建、编辑、初始化入口 | 工作区写入、初始快照 |
-| `:feature:workbench` | 当前阶段的工作区占位；后续承载版本操作、构建等项目功能的 UI | 业务执行、持久状态、任何 runtime handle |
+| `:feature:workbench` | 为未来工作区级 UI 保留模块边界；当前无页面实现 | 子 Feature 的 Screen、业务执行与持久状态 |
+| `:feature:chat` | Chat Route、Screen、页面菜单和草稿 UI 状态 | Agent execution、Session 持久状态 |
+| `:feature:preview` | Preview Route、Screen、预览与控制台占位 | Preview server、日志采集 |
+| `:feature:build` | Build Route 和 Screen | 构建执行与恢复 |
+| `:feature:version` | Version Route 和 Screen | 版本操作与持久快照 |
 | `:feature:settings` | 主题、语言、AI 配置页面 | DataStore、Keystore、AppCompat locale 调用 |
 
 文件浏览／编辑成为真实流程时，可建立 `:feature:files`。控制台先留在 Preview；
-会话 UI 的归属待 AI 阶段设计。工作区的具体
-组合、状态归属和迁移顺序见 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
-当前工作区阶段只做 Workbench 的 Feature 层占位，不接业务状态；具体范围见
-[WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md](WORKBENCH_UI_PLACEHOLDER_IMPLEMENTATION_PLAN.md)。
+当前四个 Screen 仍为占位，不接业务状态；
+工作区的具体组合与状态归属见 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
 ## 3. 允许依赖与禁止依赖
 
@@ -50,10 +52,10 @@ ViewModel 或模块，也不要仅因一个页面或一个 tab 就创建模块�
   -> :core:ui / :core:designsystem  // 通用 UI 与设计 token
   -> :core:navigation               // 稳定 route 与仅含 ID 的参数
   -> :feature:<name>:api            // 仅在确有跨 feature 导航时
-:app -> :feature:workbench        // app 安装工作区 destination
+:app -> :feature:chat / :feature:preview / :feature:build / :feature:version
 ```
 
-工作区占位阶段不接 domain；以下是功能接入后的目标边界：工作区容器通过
+工作区占位阶段不接 domain；以下是功能接入后的目标边界：工作区级状态持有者通过
 `:domain:project` 读取项目并请求显式关闭，Preview 通过 `:domain:preview`
 观察和控制预览。Chat 的 domain 边界随 AI 方案确定。Feature 不持有 runtime。
 
@@ -69,7 +71,7 @@ Gradle 一律先使用 `implementation`。Feature 的 public API 不应泄露 do
 跨 Feature 导航这一真实需求，才新增极小的 `:feature:<name>:api`，其中只放 route 与稳定 ID。
 现有 `verifyModuleGraph` 已禁止 Feature 实现之间的依赖；后续新增功能模块时保留规则并
 补反例测试，不添加容器特例。`:app` 只连接公开 Route、参数和回调，不承担业务状态或布局。
-版本操作和构建后续在 Workbench 中呈现，不创建独立项目级 destination。
+版本和构建占位 Screen 是 Navigation 3 中的独立目的地；执行和恢复不由目的地持有。
 
 ## 4. 推荐目录与可见性
 
@@ -99,7 +101,8 @@ Gradle 一律先使用 `implementation`。Feature 的 public API 不应泄露 do
 - 默认使用 `internal`：页面组件、UI model、mapper、action、effect、bridge 与 Hilt module 都不应
   成为跨模块 API。
 - `Screen` 不应被其他 Feature 直接调用；顶层跨 Feature 导航由 app 根导航协调。
-  `:app` 将公开的子功能 Route 传给工作区容器插槽；容器不能取得子功能的类型或 ViewModel。
+  `:app` 在导航 entry 直接调用公开的子功能 Route；Chat 自己提供页面菜单，
+  各 Feature 自己拥有 Scaffold、TopAppBar 和页面操作。
 - 只有明确复用、没有业务归属的 UI 控件才可迁至 `:core:ui` 或 `:core:designsystem`；不能把某页
   的 state、文案、业务校验迁入 core。
 
@@ -112,7 +115,7 @@ Gradle 一律先使用 `implementation`。Feature 的 public API 不应泄露 do
 
 Route 参数只能是稳定 route、`ProjectId`、`SessionId` 等 ID 或可序列化的极小值对象；不得传递
 `Parcelable` 业务对象、Repository、ViewModel、`File`、Composable lambda 或 SDK object。
-容器与子功能之间的进程内 Compose 回调不是导航参数；不得把它们存入 back stack。
+页面跳转回调不是导航参数；不得把它们存入 back stack。
 
 ### 5.2 Screen：尽量纯的渲染函数
 
@@ -159,8 +162,8 @@ data class ProjectsUiState(
   error code／语义类型，再由 UI 映射文案。
 - 一个 Feature 可以有一个页面级 ViewModel；若独立子流程拥有自己的生命周期和状态，可建立
   子 ViewModel，但不能让多个 ViewModel 同时作为同一页面业务真相的 owner。
-- 工作区容器不汇总 Chat 消息、Preview 状态和 Console 日志为一个巨型 `UiState`；
-  各子功能分别映射自身的 domain 状态，容器仅保存项目和界面选择。
+- 工作区级状态持有者不汇总 Chat 消息、Preview 状态和 Console 日志为一个巨型 `UiState`；
+  各子功能分别映射自身的 domain 状态，导航仅保存项目和界面选择。
 
 ### 6.2 `Action`
 
@@ -228,8 +231,9 @@ bridge 可以引用 Android API，却只做平台输入输出转换：
 
 ## 9. 导航规范
 
-- 根导航由 `:app` 安装；Feature 定义自己的 route key 与参数解析，但不控制其他 Feature 的内部实现。
-- `:app` 用一个 Navigation 3 返回栈安装 Workbench。工作区导航 key 携带稳定的 `ProjectId`。
+- 根导航与四个独立目的地的 key 由 `:app` 安装；Feature 不控制其他 Feature 的内部实现。
+- `:app` 用一个 Navigation 3 返回栈分别注册 Chat、Preview、Build、Version。
+  每个目的地 key 只携带稳定的 `ProjectId`。
 - Feature 间仅传 route 和稳定 ID。目标页面重新通过 domain 加载数据，避免携带过期对象。
 - 若多个 Feature 必须直接使用同一 destination，只能新增极小 `:feature:<name>:api`；API 不包含
   Screen、ViewModel、Compose、Repository 或业务模型。

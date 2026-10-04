@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ProjectsRoute(
-    onProjectSelected: (ProjectId) -> Unit,
-    onSettingsRequested: () -> Unit,
+    onNavigateToProject: (ProjectId) -> Unit,
+    onNavigateToSettings: () -> Unit,
     viewModel: ProjectsViewModel = viewModel()
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
@@ -22,7 +22,7 @@ fun ProjectsRoute(
     LaunchedEffect(viewModel, context, resources) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
-                is ProjectsEffect.NavigateToProject -> onProjectSelected(effect.projectId)
+                is ProjectsEffect.NavigateToProject -> onNavigateToProject(effect.projectId)
                 is ProjectsEffect.ShowMessage -> Toast.makeText(
                     context,
                     resources.getString(projectsErrorResource(effect.message.error)),
@@ -34,6 +34,6 @@ fun ProjectsRoute(
     ProjectsScreen(
         uiState = uiState,
         onAction = viewModel::onAction,
-        onSettingsRequested = onSettingsRequested
+        onNavigateToSettings = onNavigateToSettings
     )
 }

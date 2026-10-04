@@ -214,7 +214,8 @@ shell。只有某项技术能力确实要建立在另一项更基础的 core 技
 | `:domain:<area>` | `:data:*`、`core:common/model`、必要 contract | feature、app、storage SDK 类型 |
 | `:feature:<area>` | domain、UI 相关 core、极小 feature API | data、技术 core 存储模块、contract、runtime、其他 Feature 的实现 |
 
-`:app` 负责将工作区容器插槽与 Chat／Preview Route 连接；当前只连接 Feature 层占位，
+`:app` 在导航 entry 直接连接 Chat／Preview／Build／Version Route；Chat 自己声明页面菜单，
+每个 Feature 自己声明 Scaffold 和 TopAppBar。当前只连接 Feature 层占位，
 不为工作区占位页面接入 domain/data。Feature 之间没有实现依赖。
 具体范围与迁移门槛见
 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。

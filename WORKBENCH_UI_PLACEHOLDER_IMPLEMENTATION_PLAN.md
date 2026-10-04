@@ -1,6 +1,6 @@
 # 工作区界面占位实施方案
 
-> 状态：已实施。当前只交付 Workbench 界面占位。
+> 状态：历史方案；当前四个界面占位结构见 [WORKBENCH_ARCHITECTURE.md](WORKBENCH_ARCHITECTURE.md)。
 
 ## 范围
 

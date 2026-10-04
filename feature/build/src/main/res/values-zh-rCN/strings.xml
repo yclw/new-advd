@@ -1,0 +1,7 @@
+<resources>
+    <string name="build_title">构建</string>
+    <string name="build_back">返回</string>
+    <string name="build_start">开始构建</string>
+    <string name="build_output_title">构建输出</string>
+    <string name="build_output_empty">暂无构建记录。</string>
+</resources>

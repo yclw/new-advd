@@ -4,7 +4,7 @@ Owner: Android Vibe Design maintainers. Provides Android, Compose, domain, Kotli
 
 `verifyModuleGraph` currently permits Feature dependencies on core, domain, and
 `*:api` Feature modules only. Keep the ban on dependencies between Feature implementations.
-The planned Chat and Preview routes are composed with Workbench UI slots in `:app`, as described
-in [WORKBENCH_ARCHITECTURE.md](../../WORKBENCH_ARCHITECTURE.md). When those modules are added,
-add negative tests for `workbench -> chat`, `chat -> preview`, and the reverse directions;
-do not add a container exception.
+Chat, Preview, Build, and Version Routes are rendered directly by `:app`; each Screen owns its
+Scaffold and TopAppBar, and Chat owns its page menu and requests navigation through callbacks,
+as described in [WORKBENCH_ARCHITECTURE.md](../../WORKBENCH_ARCHITECTURE.md). Keep negative tests
+for Feature-to-Feature implementation dependencies; do not add a container exception.
