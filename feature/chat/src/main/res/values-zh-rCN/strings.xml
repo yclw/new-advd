@@ -10,4 +10,10 @@
     <string name="chat_empty_message">聊天消息将在这里显示。</string>
     <string name="chat_prompt_label">消息</string>
     <string name="chat_send">发送</string>
+    <string name="chat_sessions">会话</string>
+    <string name="chat_new_session">新建对话</string>
+    <string name="chat_no_sessions">暂无会话</string>
+    <string name="chat_assistant_label">助手</string>
+    <string name="chat_scroll_bottom">回到最新 ↓</string>
+    <string name="chat_demo_notice">本地界面演示 · 尚未接入 Agent</string>
 </resources>

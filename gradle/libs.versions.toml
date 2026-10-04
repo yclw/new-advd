@@ -21,6 +21,7 @@ testRunner = "1.7.0"
 junit = "4.13.2"
 ktlint = "14.2.0"
 ucrop = "2.2.11"
+markdown = "d79a97cc8e"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
@@ -53,6 +54,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
+jetbrains-markdown = { module = "com.github.rikkahub:markdown", version.ref = "markdown" }
 
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

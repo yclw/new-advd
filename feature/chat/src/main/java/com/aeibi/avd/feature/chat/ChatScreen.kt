@@ -1,46 +1,147 @@
 package com.aeibi.avd.feature.chat
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
 import com.aeibi.avd.core.ui.NavigateBackButton
+import kotlinx.coroutines.launch
+
+private const val SCROLL_TO_END_DISTANCE_PX = 100_000f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ChatScreen(
+    uiState: ChatUiState,
+    onDraftChange: (String) -> Unit,
+    onClearDraft: () -> Unit,
+    onNewSession: () -> Unit,
+    onSelectSession: (String) -> Unit,
+    onSend: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToPreview: () -> Unit,
     onNavigateToBuild: () -> Unit,
     onNavigateToVersion: () -> Unit
 ) {
-    var draft by rememberSaveable { mutableStateOf("") }
-    var pagesExpanded by rememberSaveable { mutableStateOf(false) }
-    Scaffold(
-        topBar = {
+    var pagesExpanded by remember { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.chat_sessions),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    TextButton(onClick = {
+                        onNewSession()
+                        scope.launch { drawerState.close() }
+                    }) { Text(stringResource(R.string.chat_new_session)) }
+                }
+                if (uiState.sessions.isEmpty()) {
+                    Text(
+                        stringResource(R.string.chat_no_sessions),
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LazyColumn {
+                        items(uiState.sessions, key = { it.id }) { session ->
+                            Surface(
+                                color = if (session.id == uiState.selectedSessionId) {
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().padding(
+                                    horizontal = 12.dp,
+                                    vertical = 3.dp
+                                )
+                                    .clickable {
+                                        onSelectSession(session.id)
+                                        scope.launch { drawerState.close() }
+                                    }
+                            ) {
+                                Text(
+                                    session.title.ifBlank {
+                                        stringResource(R.string.chat_new_session)
+                                    },
+                                    modifier = Modifier.padding(14.dp),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ) {
+        Scaffold(topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.chat_title)) },
+                title = {
+                    Text(
+                        uiState.selectedSession?.title?.ifBlank {
+                            stringResource(R.string.chat_title)
+                        }
+                            ?: stringResource(R.string.chat_title),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
                 navigationIcon = {
                     NavigateBackButton(
                         contentDescription = stringResource(R.string.chat_back),
@@ -48,16 +149,19 @@ internal fun ChatScreen(
                     )
                 },
                 actions = {
-                    TextButton(onClick = { draft = "" }, enabled = draft.isNotEmpty()) {
-                        Text(stringResource(R.string.chat_clear_draft))
+                    TextButton(onClick = { scope.launch { drawerState.open() } }) {
+                        Text(stringResource(R.string.chat_sessions))
                     }
-                    TextButton(onClick = { pagesExpanded = true }) {
-                        Text(stringResource(R.string.chat_pages))
+                    TextButton(onClick = onNewSession) {
+                        Text(stringResource(R.string.chat_new_session))
                     }
-                    DropdownMenu(
-                        expanded = pagesExpanded,
-                        onDismissRequest = { pagesExpanded = false }
-                    ) {
+                    TextButton(onClick = {
+                        pagesExpanded = true
+                    }) { Text(stringResource(R.string.chat_pages)) }
+                    DropdownMenu(expanded = pagesExpanded, onDismissRequest = {
+                        pagesExpanded =
+                            false
+                    }) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.chat_open_preview)) },
                             onClick = dropUnlessResumed {
@@ -82,33 +186,171 @@ internal fun ChatScreen(
                     }
                 }
             )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        }) { paddingValues ->
             Column(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxSize().padding(
+                    paddingValues
+                ).padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(stringResource(R.string.chat_empty_title))
-                Text(stringResource(R.string.chat_empty_message))
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    label = { Text(stringResource(R.string.chat_prompt_label)) },
-                    modifier = Modifier.weight(1f),
-                    minLines = 1,
-                    maxLines = 4
+                key(uiState.selectedSessionId) {
+                    ChatMessageList(uiState.selectedSession, Modifier.fillMaxWidth().weight(1f))
+                }
+                Text(
+                    stringResource(R.string.chat_demo_notice),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Button(onClick = {}, enabled = false, modifier = Modifier.align(Alignment.Bottom)) {
-                    Text(stringResource(R.string.chat_send))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    OutlinedTextField(
+                        value = uiState.draft,
+                        onValueChange = onDraftChange,
+                        label = { Text(stringResource(R.string.chat_prompt_label)) },
+                        modifier = Modifier.weight(1f),
+                        minLines = 1,
+                        maxLines = 4,
+                        trailingIcon = {
+                            if (uiState.draft.isNotEmpty()) {
+                                TextButton(onClick = onClearDraft) {
+                                    Text(stringResource(R.string.chat_clear_draft))
+                                }
+                            }
+                        }
+                    )
+                    Button(onClick = onSend, enabled = uiState.draft.isNotBlank()) {
+                        Text(stringResource(R.string.chat_send))
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ChatMessageList(session: ChatSessionUi?, modifier: Modifier = Modifier) {
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var follow by remember(session?.id) { mutableStateOf(true) }
+    var atBottom by remember(session?.id) { mutableStateOf(true) }
+    val messages = session?.messages.orEmpty()
+    val latestMessages by rememberUpdatedState(messages)
+    val lastMessage = messages.lastOrNull()
+    val scrollConnection = remember(session?.id) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && available.y > 0f) follow = false
+                return Offset.Zero
+            }
+        }
+    }
+    LaunchedEffect(listState, session?.id) {
+        snapshotFlow { !listState.canScrollForward }.collect { bottom ->
+            atBottom = bottom
+            if (bottom) follow = true
+        }
+    }
+    LaunchedEffect(session?.id) {
+        if (messages.isNotEmpty()) listState.scrollToItem(messages.lastIndex)
+    }
+    LaunchedEffect(
+        session?.id,
+        messages.size,
+        lastMessage?.markdown?.length,
+        lastMessage?.streaming
+    ) {
+        if (follow && messages.isNotEmpty()) {
+            withFrameNanos { }
+            if (follow) listState.scrollBy(SCROLL_TO_END_DISTANCE_PX)
+        }
+    }
+    LaunchedEffect(listState, session?.id) {
+        snapshotFlow {
+            val layout = listState.layoutInfo
+            layout.totalItemsCount to layout.visibleItemsInfo.lastOrNull()?.size
+        }.collect {
+            if (follow && latestMessages.isNotEmpty() && listState.canScrollForward) {
+                listState.scrollBy(SCROLL_TO_END_DISTANCE_PX)
+            }
+        }
+    }
+    Box(modifier.nestedScroll(scrollConnection)) {
+        if (messages.isEmpty()) {
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    stringResource(R.string.chat_empty_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    stringResource(R.string.chat_empty_message),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(messages, key = { it.id }) { message ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = if (message.role ==
+                            ChatRole.User
+                        ) {
+                            Arrangement.End
+                        } else {
+                            Arrangement.Start
+                        }
+                    ) {
+                        if (message.role == ChatRole.User) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(18.dp),
+                                modifier = Modifier.widthIn(max = 320.dp)
+                            ) { Text(message.markdown, modifier = Modifier.padding(12.dp)) }
+                        } else {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    stringResource(R.string.chat_assistant_label),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                if (message.markdown.isNotEmpty()) {
+                                    StreamingMarkdown(
+                                        text = message.markdown,
+                                        streaming = message.streaming,
+                                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                                    )
+                                }
+                                if (message.streaming) {
+                                    Text(
+                                        "●",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                item(key = "bottom") { Box(Modifier.padding(bottom = 8.dp)) }
+            }
+        }
+        if (!atBottom && messages.isNotEmpty()) {
+            Button(
+                onClick = {
+                    follow = true
+                    scope.launch { listState.scrollBy(SCROLL_TO_END_DISTANCE_PX) }
+                },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
+            ) { Text(stringResource(R.string.chat_scroll_bottom)) }
         }
     }
 }

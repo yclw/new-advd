@@ -10,4 +10,10 @@
     <string name="chat_empty_message">Chat messages will appear here.</string>
     <string name="chat_prompt_label">Message</string>
     <string name="chat_send">Send</string>
+    <string name="chat_sessions">Sessions</string>
+    <string name="chat_new_session">New chat</string>
+    <string name="chat_no_sessions">No sessions yet</string>
+    <string name="chat_assistant_label">Assistant</string>
+    <string name="chat_scroll_bottom">Jump to latest ↓</string>
+    <string name="chat_demo_notice">Local UI demo · no agent connected</string>
 </resources>
