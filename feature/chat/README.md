@@ -14,9 +14,10 @@ The sample is not persisted and disappears when the process dies. The existing
 
 ## Streaming rendering
 
-`StreamingMarkdown` follows Gallery's two-layer crossfade idea. Each new text snapshot is
-parsed with `org.intellij.markdown` on `Dispatchers.Default`. `snapshotFlow`, `mapLatest`, and
-`conflate` discard intermediate tokens when parsing or animation falls behind. The parsed
+`StreamingMarkdown` uses a two-layer crossfade. The initial text is parsed with
+`org.intellij.markdown` during composition so its first layout has the correct height. Later
+text snapshots are parsed on `Dispatchers.Default`. `snapshotFlow`, `mapLatest`, and
+`conflate` discard intermediate tokens when parsing or animation falls behind. Each updated
 snapshot first occupies an overlay; its alpha moves from zero to one over 120 ms. After a
 frame, it becomes the base and the overlay is removed. `BlendMode.Plus` inside an offscreen
 layer avoids a dark midpoint. Only the base has accessibility semantics. Selection is enabled
@@ -28,14 +29,16 @@ math, and syntax coloring require dedicated UI components.
 
 ## Scroll following
 
-The list follows RikkaHub's `LazyColumn` pattern: stable message IDs, a bottom spacer, and
-`snapshotFlow` over visible items. While the last assistant message streams, it requests the
-bottom item only when the list is idle and that spacer is visibly at the bottom. The end-index
-check prevents an earlier visible item from being mistaken for the bottom. If the user scrolls
-up, these conditions stop automatic requests; no separate follow flag or size-based scroll
-observer can pull against the gesture. Sending a new user message requests the bottom once,
-as Gallery does. The “Jump to latest” button uses `scrollToItem(totalItemsCount - 1)` and
-Gallery's 500 ms delay before showing an away-from-bottom state.
+The list uses a `LazyColumn` with stable message IDs, a bottom spacer, and `snapshotFlow` over
+visible items. While the last assistant message streams, it requests the bottom item only when
+the list is idle and that spacer is visibly at the bottom. The end-index check prevents an
+earlier visible item from being mistaken for the bottom. A user gesture toward
+history takes priority while the list scrolls, and leaving the bottom stops automatic requests.
+Sending a message does not scroll the list. “Jump to latest” uses
+`scrollToItem(totalItemsCount - 1)`. The button waits 500 ms before showing an away-from-bottom
+state. Historical Markdown is parsed on its first composition so a lazy item
+has its Markdown height immediately when it returns to the viewport. The two-layer fade is
+used only for subsequent streaming updates.
 
 ## Agent and persistence handoff
 

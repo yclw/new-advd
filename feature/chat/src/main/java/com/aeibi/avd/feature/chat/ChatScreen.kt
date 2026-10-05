@@ -233,7 +233,6 @@ private fun ChatMessageList(session: ChatSessionUi?, modifier: Modifier = Modifi
     var atBottom by remember(session?.id) { mutableStateOf(true) }
     val messages = session?.messages.orEmpty()
     val latestMessages by rememberUpdatedState(messages)
-    val lastUserMessageId = messages.lastOrNull { it.role == ChatRole.User }?.id
     fun List<LazyListItemInfo>.isAtBottom(): Boolean {
         val lastVisible = lastOrNull() ?: return false
         val layout = listState.layoutInfo
@@ -244,11 +243,6 @@ private fun ChatMessageList(session: ChatSessionUi?, modifier: Modifier = Modifi
         snapshotFlow { !listState.canScrollForward }.collectLatest { bottom ->
             if (!bottom) delay(500)
             atBottom = bottom
-        }
-    }
-    LaunchedEffect(session?.id, lastUserMessageId) {
-        if (lastUserMessageId != null) {
-            listState.requestScrollToItem(messages.size)
         }
     }
     LaunchedEffect(listState, session?.id) {

@@ -69,7 +69,7 @@ private fun parse(source: String) =
 @Composable
 @OptIn(ExperimentalCoroutinesApi::class)
 internal fun StreamingMarkdown(text: String, streaming: Boolean, modifier: Modifier = Modifier) {
-    var base by remember { mutableStateOf<ParsedMarkdown?>(null) }
+    var base by remember { mutableStateOf(parse(text)) }
     var overlay by remember { mutableStateOf<ParsedMarkdown?>(null) }
     val alpha = remember { Animatable(0f) }
     val latestText by rememberUpdatedState(text)
@@ -80,44 +80,34 @@ internal fun StreamingMarkdown(text: String, streaming: Boolean, modifier: Modif
             .mapLatest { source -> withContext(Dispatchers.Default) { parse(source) } }
             .conflate()
             .collect { next ->
-                if (base?.source == next.source) return@collect
-                if (base == null) {
-                    base = next
-                } else {
-                    overlay = next
-                    alpha.snapTo(0f)
-                    alpha.animateTo(1f, tween(FADE_MS, easing = LinearOutSlowInEasing))
-                    base = next
-                    awaitFrame()
-                    alpha.snapTo(0f)
-                    overlay = null
-                }
+                if (base.source == next.source) return@collect
+                overlay = next
+                alpha.snapTo(0f)
+                alpha.animateTo(1f, tween(FADE_MS, easing = LinearOutSlowInEasing))
+                base = next
+                awaitFrame()
+                alpha.snapTo(0f)
+                overlay = null
             }
     }
 
     Box(modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
-        val baseSnapshot = base
-        if (baseSnapshot != null) {
-            if (streaming || overlay != null) {
+        if (streaming || overlay != null) {
+            MarkdownContent(
+                base,
+                Modifier.graphicsLayer {
+                    this.alpha = 1f - alpha.value
+                }
+            )
+        } else {
+            SelectionContainer {
                 MarkdownContent(
-                    baseSnapshot,
+                    base,
                     Modifier.graphicsLayer {
                         this.alpha = 1f - alpha.value
                     }
                 )
-            } else {
-                SelectionContainer {
-                    MarkdownContent(
-                        baseSnapshot,
-                        Modifier.graphicsLayer {
-                            this.alpha =
-                                1f - alpha.value
-                        }
-                    )
-                }
             }
-        } else {
-            Text(text, style = MaterialTheme.typography.bodyLarge)
         }
         overlay?.let { next ->
             MarkdownContent(
