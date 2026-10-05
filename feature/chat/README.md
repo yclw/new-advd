@@ -28,12 +28,14 @@ math, and syntax coloring require dedicated UI components.
 
 ## Scroll following
 
-The list uses stable message IDs as keys. New messages and streaming text trigger a scroll to
-the remaining bottom distance. A second observer follows changes in the measured list layout,
-which can arrive after background Markdown parsing. User input moving toward earlier messages
-disables following. Reaching the bottom naturally, or pressing “Jump to latest”, enables it
-again. Following uses a direct scroll for incremental text rather than starting an animation
-for every token.
+The list follows RikkaHub's `LazyColumn` pattern: stable message IDs, a bottom spacer, and
+`snapshotFlow` over visible items. While the last assistant message streams, it requests the
+bottom item only when the list is idle and that spacer is visibly at the bottom. The end-index
+check prevents an earlier visible item from being mistaken for the bottom. If the user scrolls
+up, these conditions stop automatic requests; no separate follow flag or size-based scroll
+observer can pull against the gesture. Sending a new user message requests the bottom once,
+as Gallery does. The “Jump to latest” button uses `scrollToItem(totalItemsCount - 1)` and
+Gallery's 500 ms delay before showing an away-from-bottom state.
 
 ## Agent and persistence handoff
 

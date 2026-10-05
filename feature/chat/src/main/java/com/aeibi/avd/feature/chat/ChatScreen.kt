@@ -1,16 +1,17 @@
 package com.aeibi.avd.feature.chat
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,21 +40,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
 import com.aeibi.avd.core.ui.NavigateBackButton
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-
-private const val SCROLL_TO_END_DISTANCE_PX = 100_000f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -234,50 +230,38 @@ internal fun ChatScreen(
 private fun ChatMessageList(session: ChatSessionUi?, modifier: Modifier = Modifier) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    var follow by remember(session?.id) { mutableStateOf(true) }
     var atBottom by remember(session?.id) { mutableStateOf(true) }
     val messages = session?.messages.orEmpty()
     val latestMessages by rememberUpdatedState(messages)
-    val lastMessage = messages.lastOrNull()
-    val scrollConnection = remember(session?.id) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (source == NestedScrollSource.UserInput && available.y > 0f) follow = false
-                return Offset.Zero
-            }
-        }
+    val lastUserMessageId = messages.lastOrNull { it.role == ChatRole.User }?.id
+    fun List<LazyListItemInfo>.isAtBottom(): Boolean {
+        val lastVisible = lastOrNull() ?: return false
+        val layout = listState.layoutInfo
+        return lastVisible.index == layout.totalItemsCount - 1 &&
+            lastVisible.offset + lastVisible.size <= layout.viewportEndOffset - 8
     }
     LaunchedEffect(listState, session?.id) {
-        snapshotFlow { !listState.canScrollForward }.collect { bottom ->
+        snapshotFlow { !listState.canScrollForward }.collectLatest { bottom ->
+            if (!bottom) delay(500)
             atBottom = bottom
-            if (bottom) follow = true
         }
     }
-    LaunchedEffect(session?.id) {
-        if (messages.isNotEmpty()) listState.scrollToItem(messages.lastIndex)
-    }
-    LaunchedEffect(
-        session?.id,
-        messages.size,
-        lastMessage?.markdown?.length,
-        lastMessage?.streaming
-    ) {
-        if (follow && messages.isNotEmpty()) {
-            withFrameNanos { }
-            if (follow) listState.scrollBy(SCROLL_TO_END_DISTANCE_PX)
+    LaunchedEffect(session?.id, lastUserMessageId) {
+        if (lastUserMessageId != null) {
+            listState.requestScrollToItem(messages.size)
         }
     }
     LaunchedEffect(listState, session?.id) {
-        snapshotFlow {
-            val layout = listState.layoutInfo
-            layout.totalItemsCount to layout.visibleItemsInfo.lastOrNull()?.size
-        }.collect {
-            if (follow && latestMessages.isNotEmpty() && listState.canScrollForward) {
-                listState.scrollBy(SCROLL_TO_END_DISTANCE_PX)
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo }.collect { visibleItems ->
+            if (!listState.isScrollInProgress &&
+                latestMessages.lastOrNull()?.streaming == true &&
+                visibleItems.isAtBottom()
+            ) {
+                listState.requestScrollToItem(listState.layoutInfo.totalItemsCount - 1)
             }
         }
     }
-    Box(modifier.nestedScroll(scrollConnection)) {
+    Box(modifier) {
         if (messages.isEmpty()) {
             Column(
                 modifier = Modifier.align(Alignment.Center),
@@ -296,6 +280,7 @@ private fun ChatMessageList(session: ChatSessionUi?, modifier: Modifier = Modifi
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(messages, key = { it.id }) { message ->
@@ -346,8 +331,9 @@ private fun ChatMessageList(session: ChatSessionUi?, modifier: Modifier = Modifi
         if (!atBottom && messages.isNotEmpty()) {
             Button(
                 onClick = {
-                    follow = true
-                    scope.launch { listState.scrollBy(SCROLL_TO_END_DISTANCE_PX) }
+                    scope.launch {
+                        listState.scrollToItem(listState.layoutInfo.totalItemsCount - 1)
+                    }
                 },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
             ) { Text(stringResource(R.string.chat_scroll_bottom)) }
